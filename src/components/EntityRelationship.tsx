@@ -5,11 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Asset, Zone, Device, Sensor, 
+  Asset, Zone, Device, Sensor
+} from "@/lib/models";
+import { 
   getDevicesByZone, getSensorsByDevice,
   getZoneById, getDeviceById, getSensorById,
   getPropertiesByEntity
-} from "@/lib/models";
+} from "@/lib/sample-data";
 import { 
   Building2, 
   Map, 
