@@ -8,8 +8,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <main className="flex-1 overflow-x-hidden">
-          <div className="container py-6 px-4 md:px-6">
-            <SidebarTrigger className="mb-6" />
+          <div className="h-12 border-b flex items-center px-4 bg-background">
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-1 bg-blue-500 text-white text-xs rounded">dev</span>
+              <span className="px-2 py-1 bg-blue-400 text-white text-xs rounded">s074</span>
+            </div>
+            <div className="ml-auto flex items-center space-x-2">
+              <button className="p-2 rounded-full hover:bg-muted">
+                <span className="text-lg">🌙</span>
+              </button>
+              <button className="p-2 rounded-full hover:bg-muted">
+                <span className="text-lg">✕</span>
+              </button>
+            </div>
+          </div>
+          <div className="p-6">
             {children}
           </div>
         </main>
