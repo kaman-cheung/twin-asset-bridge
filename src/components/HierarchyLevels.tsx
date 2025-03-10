@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Treemap, ResponsiveContainer } from "recharts";
-import { assets, zones, sensors, getPropertiesByEntity } from "@/lib/sample-data";
+import { assets, zones, devices, sensors, getPropertiesByEntity } from "@/lib/sample-data";
 
 // Transform data into a hierarchical structure for the treemap
 const transformData = () => {
