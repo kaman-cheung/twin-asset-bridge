@@ -2,123 +2,271 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Treemap, ResponsiveContainer } from "recharts";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Building, Server, Cpu, List } from "lucide-react";
 import { assets, zones, devices, sensors, getPropertiesByEntity } from "@/lib/sample-data";
 
-// Transform data into a hierarchical structure for the treemap
-const transformData = () => {
-  const data = assets.map(asset => ({
-    name: asset.name,
-    size: 100, // Larger size for assets
-    children: asset.zones.map(zoneId => {
-      const zone = zones.find(z => z.id === zoneId);
-      if (!zone) return null;
+// Tab-specific entity tables
+const AssetsTable = () => (
+  <div className="rounded-md border">
+    <table className="w-full">
+      <thead>
+        <tr className="bg-muted/50">
+          <th className="p-2 text-left font-medium">Name</th>
+          <th className="p-2 text-left font-medium">Type</th>
+          <th className="p-2 text-left font-medium">Location</th>
+          <th className="p-2 text-left font-medium">Status</th>
+          <th className="p-2 text-left font-medium">Zones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {assets.map((asset) => (
+          <tr key={asset.id} className="border-t hover:bg-muted/30">
+            <td className="p-2">{asset.name}</td>
+            <td className="p-2">{asset.type}</td>
+            <td className="p-2">{asset.location}</td>
+            <td className="p-2">
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                asset.status === 'active' ? 'bg-green-100 text-green-800' : 
+                asset.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' : 
+                'bg-red-100 text-red-800'
+              }`}>
+                {asset.status}
+              </span>
+            </td>
+            <td className="p-2">{asset.zones.length}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
 
-      return {
-        name: zone.displayName,
-        size: 50, // Medium size for zones
-        children: zone.devices.flatMap(deviceId => {
-          const device = devices.find(d => d.id === deviceId);
-          if (!device) return [];
+const ZonesTable = () => (
+  <div className="rounded-md border">
+    <table className="w-full">
+      <thead>
+        <tr className="bg-muted/50">
+          <th className="p-2 text-left font-medium">Display Name</th>
+          <th className="p-2 text-left font-medium">Internal Name</th>
+          <th className="p-2 text-left font-medium">Asset</th>
+          <th className="p-2 text-left font-medium">Start Date</th>
+          <th className="p-2 text-left font-medium">End Date</th>
+          <th className="p-2 text-left font-medium">Devices</th>
+        </tr>
+      </thead>
+      <tbody>
+        {zones.map((zone) => {
+          // Find the parent asset name
+          const parentAsset = assets.find(a => a.id === zone.assetId);
+          
+          return (
+            <tr key={zone.id} className="border-t hover:bg-muted/30">
+              <td className="p-2">{zone.displayName}</td>
+              <td className="p-2">{zone.internalName}</td>
+              <td className="p-2">{parentAsset ? parentAsset.name : "-"}</td>
+              <td className="p-2">{zone.startDate}</td>
+              <td className="p-2">{zone.endDate}</td>
+              <td className="p-2">{zone.devices.length}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+);
 
-          return device.sensors.map(sensorId => {
-            const sensor = sensors.find(s => s.id === sensorId);
-            if (!sensor) return null;
+const DevicesTable = () => (
+  <div className="rounded-md border">
+    <table className="w-full">
+      <thead>
+        <tr className="bg-muted/50">
+          <th className="p-2 text-left font-medium">Name</th>
+          <th className="p-2 text-left font-medium">Type</th>
+          <th className="p-2 text-left font-medium">Model</th>
+          <th className="p-2 text-left font-medium">Zone</th>
+          <th className="p-2 text-left font-medium">Status</th>
+          <th className="p-2 text-left font-medium">Sensors</th>
+        </tr>
+      </thead>
+      <tbody>
+        {devices.map((device) => {
+          // Find the parent zone name
+          const parentZone = zones.find(z => z.id === device.zoneId);
+          
+          return (
+            <tr key={device.id} className="border-t hover:bg-muted/30">
+              <td className="p-2">{device.name}</td>
+              <td className="p-2">{device.type}</td>
+              <td className="p-2">{device.model}</td>
+              <td className="p-2">{parentZone ? parentZone.displayName : "-"}</td>
+              <td className="p-2">
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  device.status === 'online' ? 'bg-green-100 text-green-800' : 
+                  device.status === 'error' ? 'bg-red-100 text-red-800' : 
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {device.status}
+                </span>
+              </td>
+              <td className="p-2">{device.sensors.length}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+);
 
-            const properties = getPropertiesByEntity("sensor", sensor.id);
-            return {
-              name: sensor.name,
-              size: 25, // Smaller size for sensors
-              children: properties.map(prop => ({
-                name: prop.name,
-                size: 10, // Smallest size for properties
-              })),
-            };
-          }).filter(Boolean);
-        }).filter(Boolean),
-      };
-    }).filter(Boolean),
-  }));
+const SensorsTable = () => (
+  <div className="rounded-md border">
+    <table className="w-full">
+      <thead>
+        <tr className="bg-muted/50">
+          <th className="p-2 text-left font-medium">Name</th>
+          <th className="p-2 text-left font-medium">Type</th>
+          <th className="p-2 text-left font-medium">Unit</th>
+          <th className="p-2 text-left font-medium">Device</th>
+          <th className="p-2 text-left font-medium">Status</th>
+          <th className="p-2 text-left font-medium">Last Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sensors.map((sensor) => {
+          // Find the parent device name
+          const parentDevice = devices.find(d => d.id === sensor.deviceId);
+          
+          return (
+            <tr key={sensor.id} className="border-t hover:bg-muted/30">
+              <td className="p-2">{sensor.name}</td>
+              <td className="p-2">{sensor.type}</td>
+              <td className="p-2">{sensor.unit}</td>
+              <td className="p-2">{parentDevice ? parentDevice.name : "-"}</td>
+              <td className="p-2">
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
+                  sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {sensor.status}
+                </span>
+              </td>
+              <td className="p-2">
+                {sensor.lastReading ? 
+                  `${sensor.lastReading.value} ${sensor.unit}` : 
+                  "-"}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+);
 
-  return [{
-    name: "Digital Twin Hierarchy",
-    children: data
-  }];
-};
-
-// Different colors for each hierarchical level
-const COLORS = [
-  "#4A4A8F", // Dark blue for assets (level 1)
-  "#6E59A5", // Purple for zones (level 2)
-  "#9B87F5", // Light purple for devices/sensors (level 3)
-  "#D6BCFA", // Very light purple for properties (level 4)
-];
-
-const CustomizedContent = (props: any) => {
-  const { depth, x, y, width, height, name } = props;
-  
-  // Skip rendering if too small to be visible
-  if (width < 2 || height < 2) return null;
-  
+const PropertiesTable = () => {
   return (
-    <g>
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        style={{
-          fill: COLORS[depth % COLORS.length],
-          stroke: '#fff',
-          strokeWidth: depth < 3 ? 2 : 1, // Thicker borders for higher levels
-          fillOpacity: 0.9 - (depth * 0.1), // Higher opacity for higher levels
-        }}
-      />
-      {width > 40 && height > 25 && ( // Only show text if there's enough space
-        <text
-          x={x + width / 2}
-          y={y + height / 2}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          style={{
-            fill: depth > 2 ? '#000' : '#fff', // Light text on dark backgrounds, dark text on light backgrounds
-            fontSize: Math.min(width / 10, 12),
-            fontWeight: depth === 1 ? 'bold' : 'normal',
-          }}
-        >
-          {name}
-        </text>
-      )}
-    </g>
+    <div className="rounded-md border">
+      <table className="w-full">
+        <thead>
+          <tr className="bg-muted/50">
+            <th className="p-2 text-left font-medium">Name</th>
+            <th className="p-2 text-left font-medium">Type</th>
+            <th className="p-2 text-left font-medium">Entity Type</th>
+            <th className="p-2 text-left font-medium">Entity Name</th>
+            <th className="p-2 text-left font-medium">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {getPropertiesByEntity("asset", 1).concat(
+            getPropertiesByEntity("zone", 1),
+            getPropertiesByEntity("device", 1),
+            getPropertiesByEntity("sensor", 1)
+          ).map((property) => {
+            // Find the entity this property belongs to
+            let entityName = "-";
+            if (property.entityType === "asset") {
+              const entity = assets.find(a => a.id === property.entityId);
+              if (entity) entityName = entity.name;
+            } else if (property.entityType === "zone") {
+              const entity = zones.find(z => z.id === property.entityId);
+              if (entity) entityName = entity.displayName;
+            } else if (property.entityType === "device") {
+              const entity = devices.find(d => d.id === property.entityId);
+              if (entity) entityName = entity.name;
+            } else if (property.entityType === "sensor") {
+              const entity = sensors.find(s => s.id === property.entityId);
+              if (entity) entityName = entity.name;
+            }
+            
+            return (
+              <tr key={property.id} className="border-t hover:bg-muted/30">
+                <td className="p-2">{property.name}</td>
+                <td className="p-2">{property.type}</td>
+                <td className="p-2">{property.entityType}</td>
+                <td className="p-2">{entityName}</td>
+                <td className="p-2">{property.value}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
 export function HierarchyLevels() {
-  const data = transformData();
-  
   return (
     <Card>
       <CardHeader>
         <CardTitle>Hierarchy Levels</CardTitle>
         <CardDescription>
-          Asset → Zone → Sensor → Property hierarchy visualization
+          Asset → Zone → Device → Sensor → Property hierarchy
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[600px]"> {/* Increased height for better visibility */}
-          <div className="w-full" style={{ height: '550px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <Treemap
-                data={data}
-                dataKey="size"
-                stroke="#fff"
-                fill="#8884d8"
-                content={<CustomizedContent />}
-                aspectRatio={4/3}
-              />
-            </ResponsiveContainer>
-          </div>
-        </ScrollArea>
+        <Tabs defaultValue="assets" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="assets" className="flex items-center gap-2">
+              <Building className="w-4 h-4" />
+              <span className="hidden sm:inline">Assets</span>
+            </TabsTrigger>
+            <TabsTrigger value="zones" className="flex items-center gap-2">
+              <Building className="w-4 h-4" />
+              <span className="hidden sm:inline">Zones</span>
+            </TabsTrigger>
+            <TabsTrigger value="devices" className="flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              <span className="hidden sm:inline">Devices</span>
+            </TabsTrigger>
+            <TabsTrigger value="sensors" className="flex items-center gap-2">
+              <Cpu className="w-4 h-4" />
+              <span className="hidden sm:inline">Sensors</span>
+            </TabsTrigger>
+            <TabsTrigger value="properties" className="flex items-center gap-2">
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Properties</span>
+            </TabsTrigger>
+          </TabsList>
+          <ScrollArea className="h-[600px]">
+            <TabsContent value="assets" className="p-0 m-0">
+              <AssetsTable />
+            </TabsContent>
+            <TabsContent value="zones" className="p-0 m-0">
+              <ZonesTable />
+            </TabsContent>
+            <TabsContent value="devices" className="p-0 m-0">
+              <DevicesTable />
+            </TabsContent>
+            <TabsContent value="sensors" className="p-0 m-0">
+              <SensorsTable />
+            </TabsContent>
+            <TabsContent value="properties" className="p-0 m-0">
+              <PropertiesTable />
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
       </CardContent>
     </Card>
   );
