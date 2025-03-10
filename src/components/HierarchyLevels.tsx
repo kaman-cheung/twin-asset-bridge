@@ -3,12 +3,13 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Treemap, ResponsiveContainer } from "recharts";
-import { assets, zones, devices, sensors, getPropertiesByEntity } from "@/lib/sample-data";
+import { assets, zones, sensors, getPropertiesByEntity } from "@/lib/sample-data";
 
 // Transform data into a hierarchical structure for the treemap
 const transformData = () => {
   const data = assets.map(asset => ({
     name: asset.name,
+    size: 1,
     children: asset.zones.map(zoneId => {
       const zone = zones.find(z => z.id === zoneId);
       if (!zone) return null;
@@ -16,26 +17,24 @@ const transformData = () => {
       return {
         name: zone.displayName,
         size: 1,
-        children: zone.devices.map(deviceId => {
+        children: zone.devices.flatMap(deviceId => {
           const device = devices.find(d => d.id === deviceId);
-          if (!device) return null;
+          if (!device) return [];
 
-          return {
-            name: device.name,
-            children: device.sensors.map(sensorId => {
-              const sensor = sensors.find(s => s.id === sensorId);
-              if (!sensor) return null;
+          return device.sensors.map(sensorId => {
+            const sensor = sensors.find(s => s.id === sensorId);
+            if (!sensor) return null;
 
-              const properties = getPropertiesByEntity("sensor", sensor.id);
-              return {
-                name: sensor.name,
-                children: properties.map(prop => ({
-                  name: prop.name,
-                  size: 1,
-                })),
-              };
-            }).filter(Boolean),
-          };
+            const properties = getPropertiesByEntity("sensor", sensor.id);
+            return {
+              name: sensor.name,
+              size: 1,
+              children: properties.map(prop => ({
+                name: prop.name,
+                size: 1,
+              })),
+            };
+          }).filter(Boolean);
         }).filter(Boolean),
       };
     }).filter(Boolean),
@@ -48,15 +47,14 @@ const transformData = () => {
 };
 
 const COLORS = [
-  "#9b87f5", // Primary Purple
-  "#7E69AB", // Secondary Purple
-  "#6E59A5", // Tertiary Purple
-  "#D6BCFA", // Light Purple
-  "#E5DEFF", // Soft Purple
+  "#4A4A8F", // Dark blue for assets
+  "#6E59A5", // Purple for zones
+  "#9B87F5", // Light purple for sensors
+  "#D6BCFA", // Very light purple for properties
 ];
 
 const CustomizedContent = (props: any) => {
-  const { root, depth, x, y, width, height, name, index } = props;
+  const { depth, x, y, width, height, name } = props;
 
   return (
     <g>
@@ -69,8 +67,7 @@ const CustomizedContent = (props: any) => {
           fill: COLORS[depth % COLORS.length],
           stroke: '#fff',
           strokeWidth: 2,
-          strokeOpacity: 1,
-          fillOpacity: depth === 1 ? 0.8 : 0.6,
+          fillOpacity: 0.8,
         }}
       />
       {width > 50 && height > 20 && (
@@ -99,7 +96,9 @@ export function HierarchyLevels() {
     <Card>
       <CardHeader>
         <CardTitle>Hierarchy Levels</CardTitle>
-        <CardDescription>Hierarchical visualization of digital twin metadata</CardDescription>
+        <CardDescription>
+          Asset → Zone → Sensor → Property hierarchy visualization
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[500px]">
@@ -111,7 +110,7 @@ export function HierarchyLevels() {
                 stroke="#fff"
                 fill="#8884d8"
                 content={<CustomizedContent />}
-                aspectRatio={4 / 3}
+                aspectRatio={1}
               />
             </ResponsiveContainer>
           </div>
