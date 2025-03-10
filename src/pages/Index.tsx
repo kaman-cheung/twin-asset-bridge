@@ -1,11 +1,11 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Building2, Home, Cpu, Activity, ArrowRight, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
-import { assets, zones, devices, sensors, getDevicesByZone, getSensorsByDevice } from "@/lib/sample-data";
+import { assets, zones, devices, sensors } from "@/lib/sample-data";
+import { HierarchyLevels } from "@/components/HierarchyLevels";
 
 // Get counts for each entity type with status breakdown
 const getCounts = () => {
@@ -29,35 +29,9 @@ const getCounts = () => {
   return { assetCount, zoneCount, deviceCount, sensorCount };
 };
 
-// Get total number of relationships
-const getRelationshipCounts = () => {
-  // Count zone-device relationships
-  const zoneDeviceRelationships = zones.reduce((acc, zone) => acc + zone.devices.length, 0);
-  
-  // Count device-sensor relationships
-  const deviceSensorRelationships = devices.reduce((acc, device) => acc + device.sensors.length, 0);
-  
-  return {
-    zoneDeviceRelationships,
-    deviceSensorRelationships,
-    total: zoneDeviceRelationships + deviceSensorRelationships
-  };
-};
-
 const Index = () => {
   const navigate = useNavigate();
   const counts = getCounts();
-  const relationshipCounts = getRelationshipCounts();
-
-  // Find zones with most devices
-  const topZonesByDevices = [...zones]
-    .sort((a, b) => b.devices.length - a.devices.length)
-    .slice(0, 3);
-
-  // Find devices with most sensors
-  const topDevicesBySensors = [...devices]
-    .sort((a, b) => b.sensors.length - a.sensors.length)
-    .slice(0, 3);
 
   return (
     <Layout>
@@ -183,91 +157,9 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Relationships Section */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Relationship Overview</CardTitle>
-              <CardDescription>Connections between entities in your digital twin</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-sm font-medium">Zone-Device Connections</span>
-                    <div className="text-2xl font-bold">{relationshipCounts.zoneDeviceRelationships}</div>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">Device-Sensor Connections</span>
-                    <div className="text-2xl font-bold">{relationshipCounts.deviceSensorRelationships}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span>Total Relationships</span>
-                    <span className="font-medium">{relationshipCounts.total}</span>
-                  </div>
-                  <Progress value={100} className="h-2" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Connected Entities</CardTitle>
-              <CardDescription>Entities with the most relationships</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Zones with Most Devices</h3>
-                  <div className="space-y-2">
-                    {topZonesByDevices.map((zone) => (
-                      <div key={zone.id} className="flex items-center justify-between py-1 border-b">
-                        <div className="flex items-center">
-                          <Map className="h-4 w-4 mr-2 text-green-500" />
-                          <span className="text-sm">{zone.displayName}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Cpu className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm font-medium">{zone.devices.length}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Devices with Most Sensors</h3>
-                  <div className="space-y-2">
-                    {topDevicesBySensors.map((device) => {
-                      const zone = zones.find(z => z.id === device.zoneId);
-                      return (
-                        <div key={device.id} className="flex items-center justify-between py-1 border-b">
-                          <div>
-                            <div className="flex items-center">
-                              <Cpu className="h-4 w-4 mr-2 text-orange-500" />
-                              <span className="text-sm">{device.name}</span>
-                            </div>
-                            {zone && (
-                              <div className="text-xs text-muted-foreground ml-6">
-                                in {zone.displayName}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Activity className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm font-medium">{device.sensors.length}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Hierarchy Levels Section */}
+        <div className="grid gap-6">
+          <HierarchyLevels />
         </div>
 
         {/* Quick Actions */}
