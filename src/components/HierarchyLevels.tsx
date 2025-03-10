@@ -9,14 +9,14 @@ import { assets, zones, devices, sensors, getPropertiesByEntity } from "@/lib/sa
 const transformData = () => {
   const data = assets.map(asset => ({
     name: asset.name,
-    size: 1,
+    size: 100, // Larger size for assets
     children: asset.zones.map(zoneId => {
       const zone = zones.find(z => z.id === zoneId);
       if (!zone) return null;
 
       return {
         name: zone.displayName,
-        size: 1,
+        size: 50, // Medium size for zones
         children: zone.devices.flatMap(deviceId => {
           const device = devices.find(d => d.id === deviceId);
           if (!device) return [];
@@ -28,10 +28,10 @@ const transformData = () => {
             const properties = getPropertiesByEntity("sensor", sensor.id);
             return {
               name: sensor.name,
-              size: 1,
+              size: 25, // Smaller size for sensors
               children: properties.map(prop => ({
                 name: prop.name,
-                size: 1,
+                size: 10, // Smallest size for properties
               })),
             };
           }).filter(Boolean);
@@ -46,16 +46,20 @@ const transformData = () => {
   }];
 };
 
+// Different colors for each hierarchical level
 const COLORS = [
-  "#4A4A8F", // Dark blue for assets
-  "#6E59A5", // Purple for zones
-  "#9B87F5", // Light purple for sensors
-  "#D6BCFA", // Very light purple for properties
+  "#4A4A8F", // Dark blue for assets (level 1)
+  "#6E59A5", // Purple for zones (level 2)
+  "#9B87F5", // Light purple for devices/sensors (level 3)
+  "#D6BCFA", // Very light purple for properties (level 4)
 ];
 
 const CustomizedContent = (props: any) => {
   const { depth, x, y, width, height, name } = props;
-
+  
+  // Skip rendering if too small to be visible
+  if (width < 2 || height < 2) return null;
+  
   return (
     <g>
       <rect
@@ -66,19 +70,19 @@ const CustomizedContent = (props: any) => {
         style={{
           fill: COLORS[depth % COLORS.length],
           stroke: '#fff',
-          strokeWidth: 2,
-          fillOpacity: 0.8,
+          strokeWidth: depth < 3 ? 2 : 1, // Thicker borders for higher levels
+          fillOpacity: 0.9 - (depth * 0.1), // Higher opacity for higher levels
         }}
       />
-      {width > 50 && height > 20 && (
+      {width > 40 && height > 25 && ( // Only show text if there's enough space
         <text
           x={x + width / 2}
           y={y + height / 2}
           textAnchor="middle"
           dominantBaseline="middle"
           style={{
-            fill: '#fff',
-            fontSize: Math.min(width / 10, 14),
+            fill: depth > 2 ? '#000' : '#fff', // Light text on dark backgrounds, dark text on light backgrounds
+            fontSize: Math.min(width / 10, 12),
             fontWeight: depth === 1 ? 'bold' : 'normal',
           }}
         >
@@ -101,8 +105,8 @@ export function HierarchyLevels() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[500px]">
-          <div className="w-full" style={{ height: '450px' }}>
+        <ScrollArea className="h-[600px]"> {/* Increased height for better visibility */}
+          <div className="w-full" style={{ height: '550px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <Treemap
                 data={data}
@@ -110,7 +114,7 @@ export function HierarchyLevels() {
                 stroke="#fff"
                 fill="#8884d8"
                 content={<CustomizedContent />}
-                aspectRatio={1}
+                aspectRatio={4/3}
               />
             </ResponsiveContainer>
           </div>
