@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Building2, Home, Cpu, Activity, ArrowRight, Map } from "lucide-react";
@@ -6,32 +7,77 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { assets, zones, devices, sensors } from "@/lib/sample-data";
 import { HierarchyLevels } from "@/components/HierarchyLevels";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Get counts for each entity type with status breakdown
-const getCounts = () => {
-  const assetCount = assets.length;
-  const zoneCount = zones.length;
+const getCounts = (assetFilter: string | null) => {
+  let filteredAssets = assets;
+  let filteredZones = zones;
+  let filteredDevices = devices;
+  let filteredSensors = sensors;
+  
+  // Apply asset filter if specified
+  if (assetFilter) {
+    filteredAssets = assets.filter(a => a.type === assetFilter);
+    const assetIds = filteredAssets.map(a => a.id);
+    filteredZones = zones.filter(z => assetIds.includes(z.assetId));
+    
+    const zoneIds = filteredZones.map(z => z.id);
+    filteredDevices = devices.filter(d => zoneIds.some(id => d.zoneId === id));
+    
+    const deviceIds = filteredDevices.map(d => d.id);
+    filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
+  }
+  
+  const assetCount = {
+    total: filteredAssets.length,
+    office: filteredAssets.filter(a => a.type === 'office').length,
+    residential: filteredAssets.filter(a => a.type === 'residential').length
+  };
+  
+  const zoneCount = {
+    total: filteredZones.length,
+    office: filteredZones.filter(z => z.type === 'office').length,
+    meetingRoom: filteredZones.filter(z => z.type === 'meeting-room').length,
+    commonArea: filteredZones.filter(z => z.type === 'common-area').length
+  };
   
   const deviceCount = {
-    total: devices.length,
-    online: devices.filter(d => d.status === "online").length,
-    offline: devices.filter(d => d.status === "offline").length,
-    error: devices.filter(d => d.status === "error").length
+    total: filteredDevices.length,
+    online: filteredDevices.filter(d => d.status === "online").length,
+    offline: filteredDevices.filter(d => d.status === "offline").length,
+    error: filteredDevices.filter(d => d.status === "error").length,
+    terabee: filteredDevices.filter(d => d.type === "terabee").length,
+    nexelec: filteredDevices.filter(d => d.type === "nexelec").length,
+    ewattch: filteredDevices.filter(d => d.type === "ewattch").length
   };
   
   const sensorCount = {
-    total: sensors.length,
-    active: sensors.filter(s => s.status === "active").length,
-    inactive: sensors.filter(s => s.status === "inactive").length,
-    error: sensors.filter(s => s.status === "error").length
+    total: filteredSensors.length,
+    active: filteredSensors.filter(s => s.status === "active").length,
+    inactive: filteredSensors.filter(s => s.status === "inactive").length,
+    error: filteredSensors.filter(s => s.status === "error").length,
+    activePower: filteredSensors.filter(s => s.type === "active-power").length,
+    peopleCounting: filteredSensors.filter(s => s.type === "people-counting").length,
+    co2: filteredSensors.filter(s => s.type === "co2").length
   };
 
   return { assetCount, zoneCount, deviceCount, sensorCount };
 };
 
+// Function to create a subcategory item for metrics cards
+const SubcategoryItem = ({ label, count }: { label: string; count: number }) => (
+  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+    <span>{label}</span>
+    <span>{count}</span>
+  </div>
+);
+
 const Index = () => {
   const navigate = useNavigate();
-  const counts = getCounts();
+  const [assetFilter, setAssetFilter] = useState<string | null>(null);
+  const counts = getCounts(assetFilter);
 
   return (
     <Layout>
@@ -41,11 +87,20 @@ const Index = () => {
           <span>Home</span>
         </div>
 
-        <div>
+        <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight">Digital Twin Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Overview of your digital twin system entities and their relationships
-          </p>
+          <div className="w-64">
+            <Select onValueChange={(value) => setAssetFilter(value === "all" ? null : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by asset type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Assets</SelectItem>
+                <SelectItem value="office">Office Buildings</SelectItem>
+                <SelectItem value="residential">Residential Buildings</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Entity Count Cards */}
@@ -58,8 +113,11 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{counts.assetCount}</div>
-              <p className="text-sm text-muted-foreground mt-1">Buildings, facilities</p>
+              <div className="text-3xl font-bold">{counts.assetCount.total}</div>
+              <div className="mt-2 space-y-1 border-t pt-2">
+                <SubcategoryItem label="Office" count={counts.assetCount.office} />
+                <SubcategoryItem label="Residential" count={counts.assetCount.residential} />
+              </div>
             </CardContent>
             <CardFooter className="pt-0">
               <Button variant="ghost" className="p-0 h-auto" onClick={() => navigate('/assets')}>
@@ -77,8 +135,12 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{counts.zoneCount}</div>
-              <p className="text-sm text-muted-foreground mt-1">Floors, rooms, areas</p>
+              <div className="text-3xl font-bold">{counts.zoneCount.total}</div>
+              <div className="mt-2 space-y-1 border-t pt-2">
+                <SubcategoryItem label="Office" count={counts.zoneCount.office} />
+                <SubcategoryItem label="Meeting Rooms" count={counts.zoneCount.meetingRoom} />
+                <SubcategoryItem label="Common Areas" count={counts.zoneCount.commonArea} />
+              </div>
             </CardContent>
             <CardFooter className="pt-0">
               <Button variant="ghost" className="p-0 h-auto" onClick={() => navigate('/zones')}>
@@ -111,6 +173,11 @@ const Index = () => {
                       {counts.deviceCount.offline + counts.deviceCount.error}
                     </span>
                   </div>
+                </div>
+                <div className="mt-2 space-y-1 border-t pt-2">
+                  <SubcategoryItem label="Terabee" count={counts.deviceCount.terabee} />
+                  <SubcategoryItem label="Nexelec" count={counts.deviceCount.nexelec} />
+                  <SubcategoryItem label="Ewattch" count={counts.deviceCount.ewattch} />
                 </div>
               </div>
             </CardContent>
@@ -145,6 +212,11 @@ const Index = () => {
                       {counts.sensorCount.inactive + counts.sensorCount.error}
                     </span>
                   </div>
+                </div>
+                <div className="mt-2 space-y-1 border-t pt-2">
+                  <SubcategoryItem label="Active Power (kW)" count={counts.sensorCount.activePower} />
+                  <SubcategoryItem label="People Counting (count)" count={counts.sensorCount.peopleCounting} />
+                  <SubcategoryItem label="CO2 (ppm)" count={counts.sensorCount.co2} />
                 </div>
               </div>
             </CardContent>
