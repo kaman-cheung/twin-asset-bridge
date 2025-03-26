@@ -26,7 +26,7 @@ export interface Device {
   name: string;
   type: string;
   model: string;
-  status: "online" | "offline" | "error";
+  status: string; // Changed from "online" | "offline" | "error" to string to match sample data
   zoneId: number; // Reference to parent zone
   sensors: number[]; // References to sensor IDs
 }

@@ -4,6 +4,7 @@ import { devices } from "@/lib/sample-data";
 import { DevicesTable } from "@/components/devices/DevicesTable";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Device } from "@/lib/models";
 
 const Devices = () => {
   const [selectedDevices, setSelectedDevices] = useState<number[]>([]);
@@ -41,7 +42,7 @@ const Devices = () => {
           </CardHeader>
           <CardContent>
             <DevicesTable 
-              devices={devices}
+              devices={devices as Device[]}
               selectedRows={selectedDevices}
               onSelectAll={handleSelectAll}
               onSelectRow={handleSelectDevice}
