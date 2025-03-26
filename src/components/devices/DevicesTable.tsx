@@ -40,16 +40,22 @@ export function DevicesTable({
               </th>
               <th className="p-2 text-left font-medium">
                 <div className="flex items-center">
-                  NAME
+                  INTERNAL NAME
                   <button className="ml-1">↕</button>
                 </div>
               </th>
               <th className="p-2 text-left font-medium">
                 <div className="flex items-center">
-                  MODEL
+                  DISPLAY NAME
                   <button className="ml-1">↕</button>
                 </div>
               </th>
+              <th className="p-2 text-left font-medium">START DATE</th>
+              <th className="p-2 text-left font-medium">END DATE</th>
+              <th className="p-2 text-left font-medium">PROVIDER</th>
+              <th className="p-2 text-left font-medium">GATEWAY</th>
+              <th className="p-2 text-left font-medium">PHYSICAL DEVICE ID</th>
+              <th className="p-2 text-left font-medium">ASSET</th>
               <th className="p-2 text-left font-medium">SENSORS</th>
               <th className="p-2 text-left font-medium">STATUS</th>
               <th className="p-2 text-left font-medium">
@@ -81,8 +87,14 @@ export function DevicesTable({
                       onCheckedChange={() => onSelectRow(device.id)}
                     />
                   </td>
-                  <td className="p-2">{device.name}</td>
-                  <td className="p-2">{device.model}</td>
+                  <td className="p-2">{device.internal_name || device.name}</td>
+                  <td className="p-2">{device.display_name || device.name}</td>
+                  <td className="p-2">{device.start_date || '-'}</td>
+                  <td className="p-2">{device.end_date || '-'}</td>
+                  <td className="p-2">{device.provider || '-'}</td>
+                  <td className="p-2">{device.gateway || '-'}</td>
+                  <td className="p-2">{device.physical_device_id || '-'}</td>
+                  <td className="p-2">{device.asset ? device.asset : '-'}</td>
                   <td className="p-2">
                     {deviceSensors > 0 ? (
                       <div className="text-xs">

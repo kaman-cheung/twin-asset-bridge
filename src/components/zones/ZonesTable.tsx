@@ -40,13 +40,13 @@ export function ZonesTable({
               </th>
               <th className="p-2 text-left font-medium">
                 <div className="flex items-center">
-                  DISPLAY NAME
+                  INTERNAL NAME
                   <button className="ml-1">↕</button>
                 </div>
               </th>
               <th className="p-2 text-left font-medium">
                 <div className="flex items-center">
-                  INTERNAL NAME
+                  DISPLAY NAME
                   <button className="ml-1">↕</button>
                 </div>
               </th>
@@ -62,6 +62,11 @@ export function ZonesTable({
                   <button className="ml-1">↕</button>
                 </div>
               </th>
+              <th className="p-2 text-left font-medium">ZONE TYPE</th>
+              <th className="p-2 text-left font-medium">LETTABLE AREA</th>
+              <th className="p-2 text-left font-medium">CAPACITY</th>
+              <th className="p-2 text-left font-medium">ASSET</th>
+              <th className="p-2 text-left font-medium">PARENT ZONES</th>
               <th className="p-2 text-left font-medium">DEVICES</th>
               <th className="p-2 text-left font-medium">
                 <Button 
@@ -93,10 +98,15 @@ export function ZonesTable({
                       onCheckedChange={() => onSelectRow(zone.id)}
                     />
                   </td>
-                  <td className="p-2">{zone.displayName}</td>
-                  <td className="p-2">{zone.internalName}</td>
-                  <td className="p-2">{zone.startDate}</td>
-                  <td className="p-2">{zone.endDate}</td>
+                  <td className="p-2">{zone.internal_name || zone.internalName}</td>
+                  <td className="p-2">{zone.display_name || zone.displayName}</td>
+                  <td className="p-2">{zone.start_date}</td>
+                  <td className="p-2">{zone.end_date}</td>
+                  <td className="p-2">{zone.zone_type || zone.type || '-'}</td>
+                  <td className="p-2">{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</td>
+                  <td className="p-2">{zone.capacity || '-'}</td>
+                  <td className="p-2">{zone.asset || zone.assetId || '-'}</td>
+                  <td className="p-2">{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</td>
                   <td className="p-2">
                     {zoneDevices > 0 ? (
                       <div className="text-xs">
