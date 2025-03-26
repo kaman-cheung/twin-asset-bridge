@@ -1,3 +1,4 @@
+
 export const assets = [
   {
     id: 1,
@@ -455,6 +456,46 @@ export const properties = [
     value: "95",
   },
 ];
+
+// Utility functions to get entities by ID
+export const getAssetById = (id: number) => {
+  return assets.find(asset => asset.id === id) || null;
+};
+
+export const getZoneById = (id: number) => {
+  return zones.find(zone => zone.id === id) || null;
+};
+
+export const getDeviceById = (id: number) => {
+  return devices.find(device => device.id === id) || null;
+};
+
+export const getSensorById = (id: number) => {
+  return sensors.find(sensor => sensor.id === id) || null;
+};
+
+// Utility functions to get related entities
+export const getZonesByAsset = (assetId: number) => {
+  return zones.filter(zone => zone.assetId === assetId);
+};
+
+export const getDevicesByZone = (zoneId: number) => {
+  return devices.filter(device => device.zoneId === zoneId);
+};
+
+export const getSensorsByDevice = (deviceId: number) => {
+  return sensors.filter(sensor => sensor.deviceId === deviceId);
+};
+
+export const getSensorsByZone = (zoneId: number) => {
+  // Get all devices in the zone
+  const zoneDevices = getDevicesByZone(zoneId);
+  // Get all sensors for those devices
+  const zoneSensors = zoneDevices.flatMap(device => 
+    getSensorsByDevice(device.id)
+  );
+  return zoneSensors;
+};
 
 export const getPropertiesByEntity = (entityType: string, entityId: number) => {
   return properties.filter(
