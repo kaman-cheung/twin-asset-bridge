@@ -1,4 +1,3 @@
-
 export const assets = [
   {
     id: 1,
@@ -422,42 +421,135 @@ export const sensors = [
   type: ['active-power', 'people-counting', 'co2'][Math.floor(Math.random() * 3)] // Randomly assign types for demo
 }));
 
-export const properties = [
+export const leases: Lease[] = [
   {
     id: 1,
-    entityType: "asset",
-    entityId: 1,
-    name: "Occupancy",
-    type: "number",
-    value: "75",
+    tenant: "Acme Corp",
+    startDate: "2023-01-01",
+    endDate: "2024-12-31",
+    zoneIds: [1, 2]
   },
   {
     id: 2,
-    entityType: "zone",
-    entityId: 1,
-    name: "Temperature",
-    type: "number",
-    value: "22",
+    tenant: "TechSolutions Inc",
+    startDate: "2023-03-15",
+    endDate: "2024-03-14",
+    zoneIds: [3]
   },
   {
     id: 3,
-    entityType: "device",
-    entityId: 1,
-    name: "Power Consumption",
-    type: "number",
-    value: "120",
+    tenant: "Global Services LLC",
+    startDate: "2023-06-01",
+    endDate: "2023-11-30",
+    zoneIds: [4, 5]
   },
   {
     id: 4,
-    entityType: "sensor",
-    entityId: 1,
-    name: "Battery Level",
-    type: "number",
-    value: "95",
+    tenant: "Innovate Design Studio",
+    startDate: "2023-08-15",
+    endDate: "2025-08-14",
+    zoneIds: [6]
   },
+  {
+    id: 5,
+    tenant: "Future Solutions",
+    startDate: "2024-01-01",
+    endDate: "2024-12-31",
+    zoneIds: [7, 8]
+  }
 ];
 
-// Utility functions to get entities by ID
+export const properties: Property[] = [
+  {
+    id: 1,
+    name: "Floor Area",
+    type: "number",
+    value: "1200",
+    entityType: "asset",
+    entityId: 1
+  },
+  {
+    id: 2,
+    name: "Construction Year",
+    type: "number",
+    value: "2010",
+    entityType: "asset",
+    entityId: 2
+  },
+  {
+    id: 3,
+    name: "Occupancy Capacity",
+    type: "number",
+    value: "25",
+    entityType: "zone",
+    entityId: 1
+  },
+  {
+    id: 4,
+    name: "HVAC System",
+    type: "string",
+    value: "Central",
+    entityType: "zone",
+    entityId: 2
+  },
+  {
+    id: 5,
+    name: "IP Address",
+    type: "string",
+    value: "192.168.1.100",
+    entityType: "device",
+    entityId: 1
+  },
+  {
+    id: 6,
+    name: "Firmware Version",
+    type: "string",
+    value: "v2.3.5",
+    entityType: "device",
+    entityId: 2
+  },
+  {
+    id: 7,
+    name: "Calibration Date",
+    type: "date",
+    value: "2023-09-15",
+    entityType: "sensor",
+    entityId: 1
+  },
+  {
+    id: 8,
+    name: "Accuracy",
+    type: "string",
+    value: "±0.5%",
+    entityType: "sensor",
+    entityId: 2
+  },
+  {
+    id: 9,
+    name: "active-power threshold",
+    type: "number",
+    value: "1000",
+    entityType: "sensor",
+    entityId: 3
+  },
+  {
+    id: 10,
+    name: "people-counting max",
+    type: "number",
+    value: "50",
+    entityType: "sensor",
+    entityId: 4
+  },
+  {
+    id: 11,
+    name: "co2 warning level",
+    type: "number",
+    value: "1000",
+    entityType: "sensor",
+    entityId: 5
+  }
+];
+
 export const getAssetById = (id: number) => {
   return assets.find(asset => asset.id === id) || null;
 };
@@ -474,7 +566,6 @@ export const getSensorById = (id: number) => {
   return sensors.find(sensor => sensor.id === id) || null;
 };
 
-// Utility functions to get related entities
 export const getZonesByAsset = (assetId: number) => {
   return zones.filter(zone => zone.assetId === assetId);
 };
@@ -488,9 +579,7 @@ export const getSensorsByDevice = (deviceId: number) => {
 };
 
 export const getSensorsByZone = (zoneId: number) => {
-  // Get all devices in the zone
   const zoneDevices = getDevicesByZone(zoneId);
-  // Get all sensors for those devices
   const zoneSensors = zoneDevices.flatMap(device => 
     getSensorsByDevice(device.id)
   );

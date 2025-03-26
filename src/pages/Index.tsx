@@ -1,16 +1,12 @@
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Building2, Home, Cpu, Activity, ArrowRight, Map } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Building2, Home, Cpu, Activity, List, CalendarClock } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useNavigate } from "react-router-dom";
-import { assets, zones, devices, sensors } from "@/lib/sample-data";
+import { assets, zones, devices, sensors, properties, leases } from "@/lib/sample-data";
 import { MetadataTable } from "@/components/MetadataTable";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 // Function to create a subcategory item for metrics cards
 const SubcategoryItem = ({ label, count }: { label: string; count: number }) => (
@@ -21,13 +17,12 @@ const SubcategoryItem = ({ label, count }: { label: string; count: number }) => 
 );
 
 const Index = () => {
-  const navigate = useNavigate();
-  const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>("all");
   
   // Get filtered data based on selected assets
-  const filteredAssets = selectedAssets.length > 0 
-    ? assets.filter(a => selectedAssets.includes(a.id)) 
-    : assets;
+  const filteredAssets = selectedAssetId === "all" 
+    ? assets 
+    : assets.filter(a => a.id === parseInt(selectedAssetId));
   
   const assetIds = filteredAssets.map(a => a.id);
   const filteredZones = zones.filter(z => assetIds.includes(z.assetId));
@@ -35,6 +30,15 @@ const Index = () => {
   const filteredDevices = devices.filter(d => zoneIds.includes(d.zoneId));
   const deviceIds = filteredDevices.map(d => d.id);
   const filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
+  const filteredProperties = properties.filter(p => 
+    (p.entityType === "asset" && assetIds.includes(p.entityId)) ||
+    (p.entityType === "zone" && zoneIds.includes(p.entityId)) ||
+    (p.entityType === "device" && deviceIds.includes(p.entityId)) ||
+    (p.entityType === "sensor" && filteredSensors.map(s => s.id).includes(p.entityId))
+  );
+  const filteredLeases = leases.filter(l => 
+    l.zoneIds.some(zId => zoneIds.includes(zId))
+  );
   
   // Calculate counts and active/inactive metrics
   const assetCount = {
@@ -72,13 +76,31 @@ const Index = () => {
     co2: filteredSensors.filter(s => s.type === "co2").length
   };
 
-  // Toggle asset selection
-  const toggleAssetSelection = (assetId: number) => {
-    setSelectedAssets(prev => 
-      prev.includes(assetId)
-        ? prev.filter(id => id !== assetId)
-        : [...prev, assetId]
-    );
+  const propertyCount = {
+    total: filteredProperties.length,
+    active: filteredProperties.length, // Assuming all properties are active
+    inactive: 0,
+    activePower: filteredProperties.filter(p => p.name.includes("active-power")).length,
+    peopleCounting: filteredProperties.filter(p => p.name.includes("people-counting")).length,
+    co2: filteredProperties.filter(p => p.name.includes("co2")).length
+  };
+
+  const leaseCount = {
+    total: filteredLeases.length,
+    active: filteredLeases.filter(l => new Date(l.endDate) > new Date()).length,
+    inactive: filteredLeases.filter(l => new Date(l.endDate) <= new Date()).length,
+    shortTerm: filteredLeases.filter(l => {
+      const start = new Date(l.startDate);
+      const end = new Date(l.endDate);
+      const months = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+      return months <= 12;
+    }).length,
+    longTerm: filteredLeases.filter(l => {
+      const start = new Date(l.startDate);
+      const end = new Date(l.endDate);
+      const months = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+      return months > 12;
+    }).length
   };
 
   return (
@@ -91,27 +113,25 @@ const Index = () => {
 
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight">Digital Twin Dashboard</h1>
-          <div className="w-full max-w-xl">
-            <Card className="p-4">
-              <div className="text-sm font-medium mb-2">Filter by assets:</div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="w-full max-w-xs">
+            <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select asset" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Assets</SelectItem>
                 {assets.map(asset => (
-                  <div key={asset.id} className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`asset-${asset.id}`} 
-                      checked={selectedAssets.includes(asset.id)}
-                      onCheckedChange={() => toggleAssetSelection(asset.id)}
-                    />
-                    <Label htmlFor={`asset-${asset.id}`}>{asset.name}</Label>
-                  </div>
+                  <SelectItem key={asset.id} value={asset.id.toString()}>
+                    {asset.name}
+                  </SelectItem>
                 ))}
-              </div>
-            </Card>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         {/* Entity Count Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -131,18 +151,12 @@ const Index = () => {
                 <SubcategoryItem label="Residential" count={assetCount.residential} />
               </div>
             </CardContent>
-            <CardFooter className="pt-0">
-              <Button variant="ghost" className="p-0 h-auto" onClick={() => navigate('/assets')}>
-                <span className="text-sm">View Assets</span>
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Map className="h-5 w-5 text-green-500" />
+                <Building2 className="h-5 w-5 text-green-500" />
                 Zones
               </CardTitle>
             </CardHeader>
@@ -159,12 +173,6 @@ const Index = () => {
                 <SubcategoryItem label="Common Areas" count={zoneCount.commonArea} />
               </div>
             </CardContent>
-            <CardFooter className="pt-0">
-              <Button variant="ghost" className="p-0 h-auto" onClick={() => navigate('/zones')}>
-                <span className="text-sm">View Zones</span>
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card className="hover:shadow-md transition-shadow">
@@ -187,12 +195,6 @@ const Index = () => {
                 <SubcategoryItem label="Ewattch" count={deviceCount.ewattch} />
               </div>
             </CardContent>
-            <CardFooter className="pt-0">
-              <Button variant="ghost" className="p-0 h-auto" onClick={() => navigate('/devices')}>
-                <span className="text-sm">View Devices</span>
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card className="hover:shadow-md transition-shadow">
@@ -215,12 +217,49 @@ const Index = () => {
                 <SubcategoryItem label="CO2 (ppm)" count={sensorCount.co2} />
               </div>
             </CardContent>
-            <CardFooter className="pt-0">
-              <Button variant="ghost" className="p-0 h-auto" onClick={() => navigate('/sensors')}>
-                <span className="text-sm">View Sensors</span>
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </CardFooter>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <List className="h-5 w-5 text-amber-500" />
+                Properties
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{propertyCount.total}</div>
+              <div className="flex items-center justify-between text-xs mt-2">
+                <span>Active / Inactive</span>
+                <span>{propertyCount.active} / {propertyCount.inactive}</span>
+              </div>
+              <Progress value={(propertyCount.active / (propertyCount.total || 1)) * 100} className="h-1 bg-muted mt-1" />
+              <div className="mt-2 space-y-1 border-t pt-2">
+                <SubcategoryItem label="Active Power (kW)" count={propertyCount.activePower} />
+                <SubcategoryItem label="People Counting (count)" count={propertyCount.peopleCounting} />
+                <SubcategoryItem label="CO2 (ppm)" count={propertyCount.co2} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarClock className="h-5 w-5 text-teal-500" />
+                Leases
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{leaseCount.total}</div>
+              <div className="flex items-center justify-between text-xs mt-2">
+                <span>Active / Inactive</span>
+                <span>{leaseCount.active} / {leaseCount.inactive}</span>
+              </div>
+              <Progress value={(leaseCount.active / (leaseCount.total || 1)) * 100} className="h-1 bg-muted mt-1" />
+              <div className="mt-2 space-y-1 border-t pt-2">
+                <SubcategoryItem label="Short Term" count={leaseCount.shortTerm} />
+                <SubcategoryItem label="Long Term" count={leaseCount.longTerm} />
+              </div>
+            </CardContent>
           </Card>
         </div>
 
