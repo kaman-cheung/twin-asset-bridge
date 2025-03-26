@@ -15,6 +15,7 @@ export interface Zone {
   internalName: string;
   startDate: string;
   endDate: string;
+  type?: string;
   assetId?: number; // Reference to parent asset
   parentZoneId?: number; // Reference to parent zone (for hierarchical zones)
   childZones?: number[]; // References to child zones

@@ -41,17 +41,11 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r">
       <div className="flex items-center p-4">
-        <div className="w-8 h-8 mr-2">
-          <svg viewBox="0 0 24 24" className="text-blue-600 fill-current">
-            <path d="M12 1L1 8l11 7 11-7-11-7zM1 16l11 7 11-7M1 12l11 7 11-7"></path>
-          </svg>
-        </div>
         <h1 className="text-xl font-bold">DTS Admin</h1>
       </div>
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Generali</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (

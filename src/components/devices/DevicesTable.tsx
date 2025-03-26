@@ -1,7 +1,7 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Download } from "lucide-react";
 import { Device } from "@/lib/models";
 import { getSensorsByDevice } from "@/lib/sample-data";
 
@@ -20,6 +20,12 @@ export function DevicesTable({
   onSelectRow, 
   onSelectDevice 
 }: DevicesTableProps) {
+  const handleDownload = () => {
+    console.log("Downloading devices data as Excel");
+    // In a real app, this would generate and download an Excel file
+    alert("Downloading devices data...");
+  };
+
   return (
     <div className="border rounded-md">
       <div className="overflow-x-auto">
@@ -45,7 +51,18 @@ export function DevicesTable({
                 </div>
               </th>
               <th className="p-2 text-left font-medium">SENSORS</th>
-              <th className="p-2 text-left font-medium">DETAILS</th>
+              <th className="p-2 text-left font-medium">STATUS</th>
+              <th className="p-2 text-left font-medium">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDownload}
+                  className="flex items-center gap-1"
+                >
+                  <Download className="h-3 w-3" />
+                  Download
+                </Button>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -74,6 +91,15 @@ export function DevicesTable({
                     ) : (
                       <span className="text-xs text-muted-foreground">No sensors</span>
                     )}
+                  </td>
+                  <td className="p-2">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      device.status === 'online' ? 'bg-green-100 text-green-800' : 
+                      device.status === 'error' ? 'bg-red-100 text-red-800' : 
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {device.status}
+                    </span>
                   </td>
                   <td className="p-2">
                     <Button 

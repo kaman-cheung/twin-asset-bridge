@@ -1,7 +1,7 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Download } from "lucide-react";
 import { Zone } from "@/lib/models";
 import { getSensorsByZone } from "@/lib/sample-data";
 
@@ -20,6 +20,12 @@ export function ZonesTable({
   onSelectRow, 
   onSelectZone 
 }: ZonesTableProps) {
+  const handleDownload = () => {
+    console.log("Downloading zones data as Excel");
+    // In a real app, this would generate and download an Excel file
+    alert("Downloading zones data...");
+  };
+
   return (
     <div className="border rounded-md">
       <div className="overflow-x-auto">
@@ -57,7 +63,17 @@ export function ZonesTable({
                 </div>
               </th>
               <th className="p-2 text-left font-medium">DEVICES</th>
-              <th className="p-2 text-left font-medium">DETAILS</th>
+              <th className="p-2 text-left font-medium">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDownload}
+                  className="flex items-center gap-1"
+                >
+                  <Download className="h-3 w-3" />
+                  Download
+                </Button>
+              </th>
             </tr>
           </thead>
           <tbody>
