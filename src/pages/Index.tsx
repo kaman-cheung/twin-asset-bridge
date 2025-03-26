@@ -1,70 +1,16 @@
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Building2, Home, Cpu, Activity, ArrowRight, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { assets, zones, devices, sensors } from "@/lib/sample-data";
-import { HierarchyLevels } from "@/components/HierarchyLevels";
+import { MetadataTable } from "@/components/MetadataTable";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-// Get counts for each entity type with status breakdown
-const getCounts = (assetFilter: string | null) => {
-  let filteredAssets = assets;
-  let filteredZones = zones;
-  let filteredDevices = devices;
-  let filteredSensors = sensors;
-  
-  // Apply asset filter if specified
-  if (assetFilter) {
-    filteredAssets = assets.filter(a => a.type === assetFilter);
-    const assetIds = filteredAssets.map(a => a.id);
-    filteredZones = zones.filter(z => assetIds.includes(z.assetId));
-    
-    const zoneIds = filteredZones.map(z => z.id);
-    filteredDevices = devices.filter(d => zoneIds.some(id => d.zoneId === id));
-    
-    const deviceIds = filteredDevices.map(d => d.id);
-    filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
-  }
-  
-  const assetCount = {
-    total: filteredAssets.length,
-    office: filteredAssets.filter(a => a.type === 'office').length,
-    residential: filteredAssets.filter(a => a.type === 'residential').length
-  };
-  
-  const zoneCount = {
-    total: filteredZones.length,
-    office: filteredZones.filter(z => z.type === 'office').length,
-    meetingRoom: filteredZones.filter(z => z.type === 'meeting-room').length,
-    commonArea: filteredZones.filter(z => z.type === 'common-area').length
-  };
-  
-  const deviceCount = {
-    total: filteredDevices.length,
-    online: filteredDevices.filter(d => d.status === "online").length,
-    offline: filteredDevices.filter(d => d.status === "offline").length,
-    error: filteredDevices.filter(d => d.status === "error").length,
-    terabee: filteredDevices.filter(d => d.type === "terabee").length,
-    nexelec: filteredDevices.filter(d => d.type === "nexelec").length,
-    ewattch: filteredDevices.filter(d => d.type === "ewattch").length
-  };
-  
-  const sensorCount = {
-    total: filteredSensors.length,
-    active: filteredSensors.filter(s => s.status === "active").length,
-    inactive: filteredSensors.filter(s => s.status === "inactive").length,
-    error: filteredSensors.filter(s => s.status === "error").length,
-    activePower: filteredSensors.filter(s => s.type === "active-power").length,
-    peopleCounting: filteredSensors.filter(s => s.type === "people-counting").length,
-    co2: filteredSensors.filter(s => s.type === "co2").length
-  };
-
-  return { assetCount, zoneCount, deviceCount, sensorCount };
-};
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 // Function to create a subcategory item for metrics cards
 const SubcategoryItem = ({ label, count }: { label: string; count: number }) => (
@@ -76,8 +22,64 @@ const SubcategoryItem = ({ label, count }: { label: string; count: number }) => 
 
 const Index = () => {
   const navigate = useNavigate();
-  const [assetFilter, setAssetFilter] = useState<string | null>(null);
-  const counts = getCounts(assetFilter);
+  const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
+  
+  // Get filtered data based on selected assets
+  const filteredAssets = selectedAssets.length > 0 
+    ? assets.filter(a => selectedAssets.includes(a.id)) 
+    : assets;
+  
+  const assetIds = filteredAssets.map(a => a.id);
+  const filteredZones = zones.filter(z => assetIds.includes(z.assetId));
+  const zoneIds = filteredZones.map(z => z.id);
+  const filteredDevices = devices.filter(d => zoneIds.includes(d.zoneId));
+  const deviceIds = filteredDevices.map(d => d.id);
+  const filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
+  
+  // Calculate counts and active/inactive metrics
+  const assetCount = {
+    total: filteredAssets.length,
+    active: filteredAssets.filter(a => a.status === 'active').length,
+    inactive: filteredAssets.filter(a => a.status !== 'active').length,
+    office: filteredAssets.filter(a => a.type === 'office').length,
+    residential: filteredAssets.filter(a => a.type === 'residential').length
+  };
+  
+  const zoneCount = {
+    total: filteredZones.length,
+    active: filteredZones.length, // We don't have a status field for zones, assuming all are active
+    inactive: 0,
+    office: filteredZones.filter(z => z.type === 'office').length,
+    meetingRoom: filteredZones.filter(z => z.type === 'meeting-room').length,
+    commonArea: filteredZones.filter(z => z.type === 'common-area').length
+  };
+  
+  const deviceCount = {
+    total: filteredDevices.length,
+    active: filteredDevices.filter(d => d.status === "online").length,
+    inactive: filteredDevices.filter(d => d.status !== "online").length,
+    terabee: filteredDevices.filter(d => d.type === "terabee").length,
+    nexelec: filteredDevices.filter(d => d.type === "nexelec").length,
+    ewattch: filteredDevices.filter(d => d.type === "ewattch").length
+  };
+  
+  const sensorCount = {
+    total: filteredSensors.length,
+    active: filteredSensors.filter(s => s.status === "active").length,
+    inactive: filteredSensors.filter(s => s.status !== "active").length,
+    activePower: filteredSensors.filter(s => s.type === "active-power").length,
+    peopleCounting: filteredSensors.filter(s => s.type === "people-counting").length,
+    co2: filteredSensors.filter(s => s.type === "co2").length
+  };
+
+  // Toggle asset selection
+  const toggleAssetSelection = (assetId: number) => {
+    setSelectedAssets(prev => 
+      prev.includes(assetId)
+        ? prev.filter(id => id !== assetId)
+        : [...prev, assetId]
+    );
+  };
 
   return (
     <Layout>
@@ -89,17 +91,22 @@ const Index = () => {
 
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight">Digital Twin Dashboard</h1>
-          <div className="w-64">
-            <Select onValueChange={(value) => setAssetFilter(value === "all" ? null : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by asset type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Assets</SelectItem>
-                <SelectItem value="office">Office Buildings</SelectItem>
-                <SelectItem value="residential">Residential Buildings</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="w-full max-w-xl">
+            <Card className="p-4">
+              <div className="text-sm font-medium mb-2">Filter by assets:</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {assets.map(asset => (
+                  <div key={asset.id} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`asset-${asset.id}`} 
+                      checked={selectedAssets.includes(asset.id)}
+                      onCheckedChange={() => toggleAssetSelection(asset.id)}
+                    />
+                    <Label htmlFor={`asset-${asset.id}`}>{asset.name}</Label>
+                  </div>
+                ))}
+              </div>
+            </Card>
           </div>
         </div>
 
@@ -113,10 +120,15 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{counts.assetCount.total}</div>
+              <div className="text-3xl font-bold">{assetCount.total}</div>
+              <div className="flex items-center justify-between text-xs mt-2">
+                <span>Active / Inactive</span>
+                <span>{assetCount.active} / {assetCount.inactive}</span>
+              </div>
+              <Progress value={(assetCount.active / (assetCount.total || 1)) * 100} className="h-1 bg-muted mt-1" />
               <div className="mt-2 space-y-1 border-t pt-2">
-                <SubcategoryItem label="Office" count={counts.assetCount.office} />
-                <SubcategoryItem label="Residential" count={counts.assetCount.residential} />
+                <SubcategoryItem label="Office" count={assetCount.office} />
+                <SubcategoryItem label="Residential" count={assetCount.residential} />
               </div>
             </CardContent>
             <CardFooter className="pt-0">
@@ -135,11 +147,16 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{counts.zoneCount.total}</div>
+              <div className="text-3xl font-bold">{zoneCount.total}</div>
+              <div className="flex items-center justify-between text-xs mt-2">
+                <span>Active / Inactive</span>
+                <span>{zoneCount.active} / {zoneCount.inactive}</span>
+              </div>
+              <Progress value={(zoneCount.active / (zoneCount.total || 1)) * 100} className="h-1 bg-muted mt-1" />
               <div className="mt-2 space-y-1 border-t pt-2">
-                <SubcategoryItem label="Office" count={counts.zoneCount.office} />
-                <SubcategoryItem label="Meeting Rooms" count={counts.zoneCount.meetingRoom} />
-                <SubcategoryItem label="Common Areas" count={counts.zoneCount.commonArea} />
+                <SubcategoryItem label="Office" count={zoneCount.office} />
+                <SubcategoryItem label="Meeting Rooms" count={zoneCount.meetingRoom} />
+                <SubcategoryItem label="Common Areas" count={zoneCount.commonArea} />
               </div>
             </CardContent>
             <CardFooter className="pt-0">
@@ -158,27 +175,16 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="text-3xl font-bold">{counts.deviceCount.total}</div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Online</span>
-                    <span className="text-green-500 font-medium">{counts.deviceCount.online}</span>
-                  </div>
-                  <Progress value={(counts.deviceCount.online / counts.deviceCount.total) * 100} className="h-1 bg-muted" />
-                  
-                  <div className="flex items-center justify-between text-xs mt-1">
-                    <span>Offline/Error</span>
-                    <span className="text-red-500 font-medium">
-                      {counts.deviceCount.offline + counts.deviceCount.error}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 space-y-1 border-t pt-2">
-                  <SubcategoryItem label="Terabee" count={counts.deviceCount.terabee} />
-                  <SubcategoryItem label="Nexelec" count={counts.deviceCount.nexelec} />
-                  <SubcategoryItem label="Ewattch" count={counts.deviceCount.ewattch} />
-                </div>
+              <div className="text-3xl font-bold">{deviceCount.total}</div>
+              <div className="flex items-center justify-between text-xs mt-2">
+                <span>Active / Inactive</span>
+                <span>{deviceCount.active} / {deviceCount.inactive}</span>
+              </div>
+              <Progress value={(deviceCount.active / (deviceCount.total || 1)) * 100} className="h-1 bg-muted mt-1" />
+              <div className="mt-2 space-y-1 border-t pt-2">
+                <SubcategoryItem label="Terabee" count={deviceCount.terabee} />
+                <SubcategoryItem label="Nexelec" count={deviceCount.nexelec} />
+                <SubcategoryItem label="Ewattch" count={deviceCount.ewattch} />
               </div>
             </CardContent>
             <CardFooter className="pt-0">
@@ -197,27 +203,16 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="text-3xl font-bold">{counts.sensorCount.total}</div>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Active</span>
-                    <span className="text-green-500 font-medium">{counts.sensorCount.active}</span>
-                  </div>
-                  <Progress value={(counts.sensorCount.active / counts.sensorCount.total) * 100} className="h-1 bg-muted" />
-                  
-                  <div className="flex items-center justify-between text-xs mt-1">
-                    <span>Inactive/Error</span>
-                    <span className="text-red-500 font-medium">
-                      {counts.sensorCount.inactive + counts.sensorCount.error}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 space-y-1 border-t pt-2">
-                  <SubcategoryItem label="Active Power (kW)" count={counts.sensorCount.activePower} />
-                  <SubcategoryItem label="People Counting (count)" count={counts.sensorCount.peopleCounting} />
-                  <SubcategoryItem label="CO2 (ppm)" count={counts.sensorCount.co2} />
-                </div>
+              <div className="text-3xl font-bold">{sensorCount.total}</div>
+              <div className="flex items-center justify-between text-xs mt-2">
+                <span>Active / Inactive</span>
+                <span>{sensorCount.active} / {sensorCount.inactive}</span>
+              </div>
+              <Progress value={(sensorCount.active / (sensorCount.total || 1)) * 100} className="h-1 bg-muted mt-1" />
+              <div className="mt-2 space-y-1 border-t pt-2">
+                <SubcategoryItem label="Active Power (kW)" count={sensorCount.activePower} />
+                <SubcategoryItem label="People Counting (count)" count={sensorCount.peopleCounting} />
+                <SubcategoryItem label="CO2 (ppm)" count={sensorCount.co2} />
               </div>
             </CardContent>
             <CardFooter className="pt-0">
@@ -229,63 +224,10 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Hierarchy Levels Section */}
+        {/* Metadata Table Section */}
         <div className="grid gap-6">
-          <HierarchyLevels />
+          <MetadataTable />
         </div>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks for digital twin management</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Button
-                variant="outline"
-                className="h-auto p-4 justify-start text-left"
-                onClick={() => navigate('/zones')}
-              >
-                <div className="flex flex-col items-start">
-                  <Map className="h-5 w-5 mb-2" />
-                  <h3 className="font-medium">Explore Zones</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    View and manage zones and their relationships
-                  </p>
-                </div>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="h-auto p-4 justify-start text-left"
-                onClick={() => {/* TODO: Implement upload */}}
-              >
-                <div className="flex flex-col items-start">
-                  <Building2 className="h-5 w-5 mb-2" />
-                  <h3 className="font-medium">Add New Asset</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Register a new building or facility
-                  </p>
-                </div>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="h-auto p-4 justify-start text-left"
-                onClick={() => {/* TODO: Implement dashboard */}}
-              >
-                <div className="flex flex-col items-start">
-                  <Activity className="h-5 w-5 mb-2" />
-                  <h3 className="font-medium">Sensor Dashboard</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Monitor real-time sensor data
-                  </p>
-                </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );
