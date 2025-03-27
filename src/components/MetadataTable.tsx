@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { assets, zones, devices, sensors, properties, leases, procedures } from "@/lib/sample-data";
+import { Asset, Zone, Device, Sensor, Property, Lease, Procedure } from "@/lib/models";
 
 interface MetadataTableProps {
   selectedAssetId?: string;
@@ -136,7 +137,12 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   );
 }
 
-const AssetsTable = ({ statusFilter }: { statusFilter: string }) => {
+interface AssetsTableProps {
+  assets: Asset[];
+  statusFilter: string;
+}
+
+const AssetsTable = ({ assets, statusFilter }: AssetsTableProps) => {
   const filteredAssets = statusFilter === "all" 
     ? assets 
     : assets.filter(asset => 
@@ -189,7 +195,12 @@ const AssetsTable = ({ statusFilter }: { statusFilter: string }) => {
   );
 };
 
-const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
+interface ZonesTableProps {
+  zones: Zone[];
+  statusFilter: string;
+}
+
+const ZonesTable = ({ zones, statusFilter }: ZonesTableProps) => {
   const filteredZones = statusFilter === "all" 
     ? zones 
     : zones.filter(zone => 
@@ -243,7 +254,12 @@ const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
   );
 };
 
-const ProceduresTable = ({ statusFilter }: { statusFilter: string }) => {
+interface ProceduresTableProps {
+  procedures: Procedure[];
+  statusFilter: string;
+}
+
+const ProceduresTable = ({ procedures, statusFilter }: ProceduresTableProps) => {
   const proceduresData = procedures || [];
   
   return (
@@ -282,7 +298,12 @@ const ProceduresTable = ({ statusFilter }: { statusFilter: string }) => {
   );
 };
 
-const DevicesTable = ({ statusFilter }: { statusFilter: string }) => {
+interface DevicesTableProps {
+  devices: Device[];
+  statusFilter: string;
+}
+
+const DevicesTable = ({ devices, statusFilter }: DevicesTableProps) => {
   const filteredDevices = statusFilter === "all" 
     ? devices 
     : devices.filter(device => 
@@ -348,7 +369,12 @@ const DevicesTable = ({ statusFilter }: { statusFilter: string }) => {
   );
 };
 
-const SensorsTable = ({ statusFilter }: { statusFilter: string }) => {
+interface SensorsTableProps {
+  sensors: Sensor[];
+  statusFilter: string;
+}
+
+const SensorsTable = ({ sensors, statusFilter }: SensorsTableProps) => {
   const filteredSensors = statusFilter === "all" 
     ? sensors 
     : sensors.filter(sensor => 
@@ -416,7 +442,12 @@ const SensorsTable = ({ statusFilter }: { statusFilter: string }) => {
   );
 };
 
-const PropertiesTable = ({ statusFilter }: { statusFilter: string }) => {
+interface PropertiesTableProps {
+  properties: Property[];
+  statusFilter: string;
+}
+
+const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => {
   const filteredProperties = statusFilter === "all" 
     ? properties 
     : statusFilter === "active" 
@@ -488,7 +519,12 @@ const PropertiesTable = ({ statusFilter }: { statusFilter: string }) => {
   );
 };
 
-const LeasesTable = ({ statusFilter }: { statusFilter: string }) => {
+interface LeasesTableProps {
+  leases: Lease[];
+  statusFilter: string;
+}
+
+const LeasesTable = ({ leases, statusFilter }: LeasesTableProps) => {
   const today = new Date();
   
   const filteredLeases = statusFilter === "all" 
