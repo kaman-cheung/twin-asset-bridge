@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -187,7 +186,6 @@ export function MetadataTable() {
   );
 }
 
-// Tab-specific entity tables with status filter
 const AssetsTable = ({ statusFilter }: { statusFilter: string }) => {
   const filteredAssets = statusFilter === "all" 
     ? assets 
@@ -280,8 +278,8 @@ const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
               <TableRow key={zone.id}>
                 <TableCell>{zone.internal_name || zone.internalName}</TableCell>
                 <TableCell>{zone.display_name || zone.displayName}</TableCell>
-                <TableCell>{zone.start_date}</TableCell>
-                <TableCell>{zone.end_date}</TableCell>
+                <TableCell>{zone.start_date || zone.startDate}</TableCell>
+                <TableCell>{zone.end_date || zone.endDate}</TableCell>
                 <TableCell>{zone.zone_type || zone.type || '-'}</TableCell>
                 <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
                 <TableCell>{zone.capacity || '-'}</TableCell>
@@ -299,7 +297,7 @@ const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
 
 const ProceduresTable = ({ statusFilter }: { statusFilter: string }) => {
   // For procedures, we don't have a status field
-  const filteredProcedures = procedures;
+  const filteredProcedures = procedures || [];
   
   return (
     <Table>

@@ -33,7 +33,8 @@ const Zones = () => {
   const handleSelectZone = (zoneId: number) => {
     const zone = getZoneById(zoneId);
     if (zone) {
-      setSelectedZone(zone);
+      // Ensure the zone object conforms to the Zone interface
+      setSelectedZone(zone as Zone);
       setShowDetails(true);
     }
   };
@@ -41,8 +42,8 @@ const Zones = () => {
   // Filter zones based on search term
   const filteredZones = searchTerm
     ? zones.filter(zone => 
-        zone.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        zone.internalName.toLowerCase().includes(searchTerm.toLowerCase())
+        (zone.displayName || zone.display_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (zone.internalName || zone.internal_name || "").toLowerCase().includes(searchTerm.toLowerCase())
       )
     : zones;
 
@@ -59,7 +60,7 @@ const Zones = () => {
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2">
             <ZonesTable 
-              zones={filteredZones}
+              zones={filteredZones as Zone[]}
               selectedRows={selectedRows}
               onSelectAll={handleSelectAll}
               onSelectRow={handleSelectRow}

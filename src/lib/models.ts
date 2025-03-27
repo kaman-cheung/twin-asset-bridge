@@ -36,6 +36,8 @@ export interface Zone {
   parent_zones?: number[]; // References to parent zones
   childZones?: number[]; // References to child zones
   devices: number[]; // References to device IDs
+  startDate?: string; // Legacy field
+  endDate?: string; // Legacy field
 }
 
 export interface Device {

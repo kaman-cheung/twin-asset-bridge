@@ -6,6 +6,7 @@ import { AssetsTable } from "@/components/assets/AssetsTable";
 import { AssetsHeader } from "@/components/assets/AssetsHeader";
 import { AssetsSearch } from "@/components/assets/AssetsSearch";
 import { Home } from "lucide-react";
+import { Asset } from "@/lib/models";
 
 const Assets = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -58,7 +59,7 @@ const Assets = () => {
         />
         
         <AssetsTable
-          assets={filteredAssets}
+          assets={filteredAssets as Asset[]}
           selectedRows={selectedRows}
           onSelectAll={handleSelectAll}
           onSelectRow={handleSelectRow}
