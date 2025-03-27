@@ -1,9 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { Building2, Home, Cpu, Activity, List, CalendarClock } from "lucide-react";
+import { Building2, Home, Cpu, Activity, List, CalendarClock, Code } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { assets, zones, devices, sensors, properties, leases } from "@/lib/sample-data";
+import { assets, zones, devices, sensors, properties, leases, procedures } from "@/lib/sample-data";
 import { MetadataTable } from "@/components/MetadataTable";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +30,7 @@ const Index = () => {
   const filteredDevices = devices.filter(d => zoneIds.includes(d.zoneId));
   const deviceIds = filteredDevices.map(d => d.id);
   const filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
+  const filteredProcedures = procedures.filter(p => assetIds.includes(p.asset));
   const filteredProperties = properties.filter(p => 
     (p.entityType === "asset" && assetIds.includes(p.entityId)) ||
     (p.entityType === "zone" && zoneIds.includes(p.entityId)) ||
@@ -103,6 +104,15 @@ const Index = () => {
     }).length
   };
 
+  const procedureCount = {
+    total: filteredProcedures.length,
+    active: filteredProcedures.length, // Assuming all procedures are active
+    inactive: 0,
+    energy: filteredProcedures.filter(p => p.application_name.toLowerCase().includes('energy')).length,
+    occupancy: filteredProcedures.filter(p => p.application_name.toLowerCase().includes('occupancy')).length,
+    maintenance: filteredProcedures.filter(p => p.application_name.toLowerCase().includes('maintenance')).length
+  };
+
   return (
     <Layout>
       <div className="space-y-6 animate-fadeIn">
@@ -131,7 +141,7 @@ const Index = () => {
         </div>
 
         {/* Entity Count Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -258,6 +268,28 @@ const Index = () => {
               <div className="mt-2 space-y-1 border-t pt-2">
                 <SubcategoryItem label="Short Term" count={leaseCount.shortTerm} />
                 <SubcategoryItem label="Long Term" count={leaseCount.longTerm} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Code className="h-5 w-5 text-indigo-500" />
+                Procedures
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{procedureCount.total}</div>
+              <div className="flex items-center justify-between text-xs mt-2">
+                <span>Active / Inactive</span>
+                <span>{procedureCount.active} / {procedureCount.inactive}</span>
+              </div>
+              <Progress value={(procedureCount.active / (procedureCount.total || 1)) * 100} className="h-1 bg-muted mt-1" />
+              <div className="mt-2 space-y-1 border-t pt-2">
+                <SubcategoryItem label="Energy" count={procedureCount.energy} />
+                <SubcategoryItem label="Occupancy" count={procedureCount.occupancy} />
+                <SubcategoryItem label="Maintenance" count={procedureCount.maintenance} />
               </div>
             </CardContent>
           </Card>

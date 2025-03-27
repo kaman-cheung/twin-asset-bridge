@@ -1,27 +1,24 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
-import { MultiSelect } from "@/components/ui/multi-select";
-import { Building, Server, Cpu, List, CalendarClock, Code } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building, Server, Cpu, List, CalendarClock, Code, Download } from "lucide-react";
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import { assets, zones, devices, sensors, properties, leases, procedures } from "@/lib/sample-data";
 
 export function MetadataTable() {
   const [statusFilter, setStatusFilter] = useState<string>("active");
-  const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("assets");
 
-  const handleDownload = (entityType: string) => {
-    console.log(`Downloading ${entityType} data as Excel`);
+  const handleDownload = () => {
+    console.log(`Downloading ${activeTab} data as Excel`);
     // In a real app, this would generate and download an Excel file
-    alert(`Downloading ${entityType} data...`);
+    alert(`Downloading ${activeTab} data...`);
   };
 
   return (
@@ -29,13 +26,6 @@ export function MetadataTable() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Metadata</CardTitle>
         <div className="flex space-x-2">
-          <MultiSelect 
-            values={selectedAssets}
-            setValues={setSelectedAssets}
-            options={assets.map(asset => ({ label: asset.name, value: asset.id.toString() }))}
-            placeholder="Filter by asset"
-            className="w-[280px]"
-          />
           <Select onValueChange={setStatusFilter} defaultValue="active">
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
@@ -47,10 +37,19 @@ export function MetadataTable() {
               <SelectItem value="archive">Archived</SelectItem>
             </SelectContent>
           </Select>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDownload}
+            className="flex items-center gap-1"
+          >
+            <Download className="h-3 w-3" />
+            Download
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="assets" className="w-full">
+        <Tabs defaultValue="assets" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-7 mb-4">
             <TabsTrigger value="assets" className="flex items-center gap-2">
               <Building className="w-4 h-4" />
@@ -83,101 +82,24 @@ export function MetadataTable() {
           </TabsList>
           <ScrollArea className="h-[600px]">
             <TabsContent value="assets" className="p-0 m-0">
-              <div className="flex justify-end mb-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownload('assets')}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-              </div>
               <AssetsTable statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="zones" className="p-0 m-0">
-              <div className="flex justify-end mb-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownload('zones')}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-              </div>
               <ZonesTable statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="procedures" className="p-0 m-0">
-              <div className="flex justify-end mb-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownload('procedures')}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-              </div>
               <ProceduresTable statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="devices" className="p-0 m-0">
-              <div className="flex justify-end mb-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownload('devices')}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-              </div>
               <DevicesTable statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="sensors" className="p-0 m-0">
-              <div className="flex justify-end mb-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownload('sensors')}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-              </div>
               <SensorsTable statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="properties" className="p-0 m-0">
-              <div className="flex justify-end mb-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownload('properties')}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-              </div>
               <PropertiesTable statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="leases" className="p-0 m-0">
-              <div className="flex justify-end mb-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleDownload('leases')}
-                  className="flex items-center gap-1"
-                >
-                  <Download className="h-3 w-3" />
-                  Download
-                </Button>
-              </div>
               <LeasesTable statusFilter={statusFilter} />
             </TabsContent>
           </ScrollArea>
@@ -241,7 +163,6 @@ const AssetsTable = ({ statusFilter }: { statusFilter: string }) => {
 };
 
 const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
-  // For zones, we'll filter by type since they don't have a status field
   const filteredZones = statusFilter === "all" 
     ? zones 
     : zones.filter(zone => 
@@ -272,7 +193,6 @@ const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
           </TableRow>
         ) : (
           filteredZones.map((zone) => {
-            // Find the parent asset name
             const parentAsset = assets.find(a => a.id === zone.assetId);
             
             return (
@@ -297,8 +217,6 @@ const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
 };
 
 const ProceduresTable = ({ statusFilter }: { statusFilter: string }) => {
-  // For procedures, we don't have a status field
-  // Make sure procedures is defined with a default empty array if it doesn't exist
   const proceduresData = procedures || [];
   
   return (
@@ -319,7 +237,6 @@ const ProceduresTable = ({ statusFilter }: { statusFilter: string }) => {
           </TableRow>
         ) : (
           proceduresData.map((procedure) => {
-            // Find the parent asset name
             const parentAsset = assets.find(a => a.id === procedure.asset);
             
             return (
@@ -372,9 +289,7 @@ const DevicesTable = ({ statusFilter }: { statusFilter: string }) => {
           </TableRow>
         ) : (
           filteredDevices.map((device) => {
-            // Find the parent zone name
             const parentZone = zones.find(z => z.id === device.zoneId);
-            // Find the parent asset name
             const parentAsset = assets.find(a => a.id === device.asset);
             
             return (
@@ -441,9 +356,7 @@ const SensorsTable = ({ statusFilter }: { statusFilter: string }) => {
           </TableRow>
         ) : (
           filteredSensors.map((sensor) => {
-            // Find the parent device name
             const parentDevice = devices.find(d => d.id === sensor.deviceId);
-            // Find the parent zone name
             const parentZone = zones.find(z => z.id === sensor.zone);
             
             return (
@@ -477,7 +390,6 @@ const SensorsTable = ({ statusFilter }: { statusFilter: string }) => {
 };
 
 const PropertiesTable = ({ statusFilter }: { statusFilter: string }) => {
-  // For properties, we'll filter by entity type
   const filteredProperties = statusFilter === "all" 
     ? properties 
     : statusFilter === "active" 
@@ -510,7 +422,6 @@ const PropertiesTable = ({ statusFilter }: { statusFilter: string }) => {
           </TableRow>
         ) : (
           filteredProperties.map((property) => {
-            // Find the entity this property belongs to
             let entityName = "-";
             if (property.entityType === "asset") {
               const entity = assets.find(a => a.id === property.entityId);
@@ -526,7 +437,6 @@ const PropertiesTable = ({ statusFilter }: { statusFilter: string }) => {
               if (entity) entityName = entity.name;
             }
 
-            // Find the parent sensor name
             const parentSensor = sensors.find(s => s.id === property.sensor);
             
             return (
@@ -587,7 +497,6 @@ const LeasesTable = ({ statusFilter }: { statusFilter: string }) => {
           </TableRow>
         ) : (
           filteredLeases.map((lease) => {
-            // Get zone names
             const leaseZones = zones.filter(z => lease.zoneIds.includes(z.id));
             const zoneNames = leaseZones.map(z => z.displayName).join(", ");
             
