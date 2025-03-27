@@ -297,7 +297,7 @@ const Index = () => {
 
         {/* Metadata Table Section */}
         <div className="grid gap-6">
-          <MetadataTable />
+          <MetadataTable selectedAssetId={selectedAssetId} />
         </div>
       </div>
     </Layout>

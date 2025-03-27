@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,9 +12,35 @@ import {
 import { Button } from "@/components/ui/button";
 import { assets, zones, devices, sensors, properties, leases, procedures } from "@/lib/sample-data";
 
-export function MetadataTable() {
+interface MetadataTableProps {
+  selectedAssetId?: string;
+}
+
+export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [activeTab, setActiveTab] = useState<string>("assets");
+  
+  // Get filtered data based on selected assets
+  const filteredAssets = selectedAssetId === "all" 
+    ? assets 
+    : assets.filter(a => a.id === parseInt(selectedAssetId));
+  
+  const assetIds = filteredAssets.map(a => a.id);
+  const filteredZones = zones.filter(z => assetIds.includes(z.assetId));
+  const zoneIds = filteredZones.map(z => z.id);
+  const filteredDevices = devices.filter(d => zoneIds.includes(d.zoneId));
+  const deviceIds = filteredDevices.map(d => d.id);
+  const filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
+  const filteredProcedures = procedures.filter(p => assetIds.includes(p.asset));
+  const filteredProperties = properties.filter(p => 
+    (p.entityType === "asset" && assetIds.includes(p.entityId)) ||
+    (p.entityType === "zone" && zoneIds.includes(p.entityId)) ||
+    (p.entityType === "device" && deviceIds.includes(p.entityId)) ||
+    (p.entityType === "sensor" && filteredSensors.map(s => s.id).includes(p.entityId))
+  );
+  const filteredLeases = leases.filter(l => 
+    l.zoneIds.some(zId => zoneIds.includes(zId))
+  );
 
   const handleDownload = () => {
     console.log(`Downloading ${activeTab} data as Excel`);
@@ -82,25 +109,25 @@ export function MetadataTable() {
           </TabsList>
           <ScrollArea className="h-[600px]">
             <TabsContent value="assets" className="p-0 m-0">
-              <AssetsTable statusFilter={statusFilter} />
+              <AssetsTable assets={filteredAssets} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="zones" className="p-0 m-0">
-              <ZonesTable statusFilter={statusFilter} />
+              <ZonesTable zones={filteredZones} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="procedures" className="p-0 m-0">
-              <ProceduresTable statusFilter={statusFilter} />
+              <ProceduresTable procedures={filteredProcedures} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="devices" className="p-0 m-0">
-              <DevicesTable statusFilter={statusFilter} />
+              <DevicesTable devices={filteredDevices} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="sensors" className="p-0 m-0">
-              <SensorsTable statusFilter={statusFilter} />
+              <SensorsTable sensors={filteredSensors} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="properties" className="p-0 m-0">
-              <PropertiesTable statusFilter={statusFilter} />
+              <PropertiesTable properties={filteredProperties} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="leases" className="p-0 m-0">
-              <LeasesTable statusFilter={statusFilter} />
+              <LeasesTable leases={filteredLeases} statusFilter={statusFilter} />
             </TabsContent>
           </ScrollArea>
         </Tabs>
