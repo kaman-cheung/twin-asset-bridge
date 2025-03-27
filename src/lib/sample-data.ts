@@ -334,38 +334,48 @@ export const leases: Lease[] = Array.from({ length: 15 }, (_, i) => {
   };
 });
 
-export const procedures: Procedure[] = Array.from({ length: 10 }, (_, i) => {
-  const id = i + 1;
-  const assetId = Math.floor(i / 3) + 1; // Distribute across 3 assets
-  
-  const applicationNames = [
-    "Data Processing Pipeline", "Energy Analysis", "Occupancy Tracking",
-    "Environmental Monitoring", "Security System", "HVAC Control",
-    "Lighting Control", "Asset Tracking", "Maintenance Scheduling", "Space Utilization"
-  ];
-  
-  const inputSystems = ["BMS", "IoT Platform", "CMMS", "ERP", "CAFM", "BIM", "Scada"];
-  const outputSystems = ["Analytics Dashboard", "Mobile App", "Notification System", "Data Warehouse", "BI Tool"];
-  
-  // Randomly select 1-3 input systems
-  const numInputs = Math.floor(Math.random() * 3) + 1;
-  const selectedInputs = [];
-  for (let j = 0; j < numInputs; j++) {
-    const system = inputSystems[Math.floor(Math.random() * inputSystems.length)];
-    if (!selectedInputs.includes(system)) {
-      selectedInputs.push(system);
-    }
+export const procedures: Procedure[] = [
+  {
+    id: 1,
+    application_name: "Energy Optimizer",
+    input_systems: ["BMS", "Meter Data"],
+    output_system: "Building Controls",
+    config: "Standard",
+    asset: 1
+  },
+  {
+    id: 2,
+    application_name: "Occupancy Analyzer",
+    input_systems: ["Access Control", "Sensor Network"],
+    output_system: "Reporting Dashboard",
+    config: "Enhanced",
+    asset: 1
+  },
+  {
+    id: 3,
+    application_name: "Maintenance Scheduler",
+    input_systems: ["Asset Registry", "Fault Detection"],
+    output_system: "Work Order System",
+    config: "Basic",
+    asset: 2
+  },
+  {
+    id: 4,
+    application_name: "Climate Controller",
+    input_systems: ["Weather API", "HVAC System"],
+    output_system: "Building Management System",
+    config: "Advanced",
+    asset: 2
+  },
+  {
+    id: 5,
+    application_name: "Space Utilization",
+    input_systems: ["Occupancy Sensors", "Booking System"],
+    output_system: "Space Planning Tool",
+    config: "Custom",
+    asset: 3
   }
-  
-  return {
-    id,
-    application_name: applicationNames[i],
-    input_systems: selectedInputs,
-    output_system: outputSystems[Math.floor(Math.random() * outputSystems.length)],
-    config: `{"interval": "${[5, 10, 15, 30, 60][Math.floor(Math.random() * 5)]} minutes", "enabled": ${Math.random() > 0.2}}`,
-    asset: assetId
-  };
-});
+];
 
 export const getAssetById = (id: number) => {
   return assets.find(asset => asset.id === id) || null;

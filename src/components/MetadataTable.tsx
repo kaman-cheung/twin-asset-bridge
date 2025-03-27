@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -284,7 +285,7 @@ const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
                 <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
                 <TableCell>{zone.capacity || '-'}</TableCell>
                 <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
-                <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</TableCell>
+                <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parent_zones ? '1' : '0')}</TableCell>
                 <TableCell>{zone.devices.length}</TableCell>
               </TableRow>
             );
@@ -297,7 +298,8 @@ const ZonesTable = ({ statusFilter }: { statusFilter: string }) => {
 
 const ProceduresTable = ({ statusFilter }: { statusFilter: string }) => {
   // For procedures, we don't have a status field
-  const filteredProcedures = procedures || [];
+  // Make sure procedures is defined with a default empty array if it doesn't exist
+  const proceduresData = procedures || [];
   
   return (
     <Table>
@@ -311,19 +313,19 @@ const ProceduresTable = ({ statusFilter }: { statusFilter: string }) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filteredProcedures.length === 0 ? (
+        {proceduresData.length === 0 ? (
           <TableRow>
             <TableCell colSpan={5} className="text-center py-4">No procedures found</TableCell>
           </TableRow>
         ) : (
-          filteredProcedures.map((procedure) => {
+          proceduresData.map((procedure) => {
             // Find the parent asset name
             const parentAsset = assets.find(a => a.id === procedure.asset);
             
             return (
               <TableRow key={procedure.id}>
                 <TableCell>{procedure.application_name}</TableCell>
-                <TableCell>{procedure.input_systems.join(', ')}</TableCell>
+                <TableCell>{Array.isArray(procedure.input_systems) ? procedure.input_systems.join(', ') : '-'}</TableCell>
                 <TableCell>{procedure.output_system}</TableCell>
                 <TableCell>{procedure.config}</TableCell>
                 <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
