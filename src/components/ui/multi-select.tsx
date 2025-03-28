@@ -45,6 +45,9 @@ export function MultiSelect({
     setValues([]);
   };
 
+  // Ensure options are always defined
+  const safeOptions = options || [];
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -62,7 +65,7 @@ export function MultiSelect({
                 variant="secondary"
                 className="mr-1 px-1 py-0"
               >
-                {options.find((option) => option.value === value)?.label || value}
+                {safeOptions.find((option) => option.value === value)?.label || value}
                 <button
                   className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   onKeyDown={(e) => {
@@ -89,7 +92,7 @@ export function MultiSelect({
           <CommandInput placeholder="Search..." />
           <CommandEmpty>No item found.</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
-            {options.map((option) => (
+            {safeOptions.map((option) => (
               <CommandItem
                 key={option.value}
                 onSelect={() => handleSelect(option.value)}

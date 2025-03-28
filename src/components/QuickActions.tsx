@@ -27,7 +27,14 @@ export function QuickActions({ zones, devices, sensors, leases }: QuickActionsPr
   const zonesWithoutLeases = zones.filter(zone => !zonesWithLeases.has(zone.id)).length;
   
   // Zones without zone_usage
-  const zonesWithoutUsage = zones.filter(zone => !zone.usage && !zone.zone_usage).length;
+  const zonesWithoutUsage = zones.filter(zone => {
+    // Check if zone has any usage property using type assertion
+    const hasUsage = !!(
+      (zone as any).usage || 
+      (zone as any).zone_usage
+    );
+    return !hasUsage;
+  }).length;
   
   // Devices without sensors
   const devicesWithoutSensors = devices.filter(device => !device.sensors.length).length;

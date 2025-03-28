@@ -38,7 +38,15 @@ const Zones = () => {
         
         case "no-usage":
           // Find zones without usage
-          setFilteredZones(zones.filter(zone => !zone.usage && !zone.zone_usage));
+          // Check both the legacy and new property names safely
+          setFilteredZones(zones.filter(zone => {
+            // Check if the zone has any usage property
+            const hasUsage = !!(
+              (zone as any).usage || 
+              (zone as any).zone_usage
+            );
+            return !hasUsage;
+          }));
           break;
           
         default:
