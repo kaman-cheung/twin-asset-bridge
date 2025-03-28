@@ -1,24 +1,59 @@
 
 import { Layout } from "@/components/Layout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ZonesHeader } from "@/components/zones/ZonesHeader";
 import { ZonesSearch } from "@/components/zones/ZonesSearch";
 import { ZonesTable } from "@/components/zones/ZonesTable";
 import { ZoneDetails } from "@/components/zones/ZoneDetails";
-import { zones, getZoneById } from "@/lib/sample-data";
+import { zones, getZoneById, leases } from "@/lib/sample-data";
 import { Zone } from "@/lib/models";
+import { useLocation } from "react-router-dom";
 
 const Zones = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const location = useLocation();
+  
+  // Handle filters from quick actions
+  const [filteredZones, setFilteredZones] = useState<typeof zones>(zones);
+  
+  useEffect(() => {
+    const filter = location.state?.filter;
+    const today = new Date();
+    
+    if (filter) {
+      switch (filter) {
+        case "no-lease":
+          // Find zones without active leases
+          const zonesWithLeases = new Set<number>();
+          leases.forEach(lease => {
+            if (new Date(lease.endDate) > today) {
+              lease.zoneIds.forEach(zoneId => zonesWithLeases.add(zoneId));
+            }
+          });
+          setFilteredZones(zones.filter(zone => !zonesWithLeases.has(zone.id)));
+          break;
+        
+        case "no-usage":
+          // Find zones without usage
+          setFilteredZones(zones.filter(zone => !zone.usage && !zone.zone_usage));
+          break;
+          
+        default:
+          setFilteredZones(zones);
+      }
+    } else {
+      setFilteredZones(zones);
+    }
+  }, [location.state]);
   
   const handleSelectAll = () => {
-    if (selectedRows.length === zones.length) {
+    if (selectedRows.length === filteredZones.length) {
       setSelectedRows([]);
     } else {
-      setSelectedRows(zones.map(zone => zone.id));
+      setSelectedRows(filteredZones.map(zone => zone.id));
     }
   };
   
@@ -39,18 +74,18 @@ const Zones = () => {
     }
   };
 
-  // Filter zones based on search term
-  const filteredZones = searchTerm
-    ? zones.filter(zone => 
+  // Apply search filter
+  const displayedZones = searchTerm
+    ? filteredZones.filter(zone => 
         (zone.displayName || zone.display_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (zone.internalName || zone.internal_name || "").toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : zones;
+    : filteredZones;
 
   return (
     <Layout>
       <div className="space-y-6 animate-fadeIn">
-        <ZonesHeader count={filteredZones.length} />
+        <ZonesHeader count={displayedZones.length} />
         
         <ZonesSearch 
           searchTerm={searchTerm} 
@@ -60,7 +95,7 @@ const Zones = () => {
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2">
             <ZonesTable 
-              zones={filteredZones as Zone[]}
+              zones={displayedZones as Zone[]}
               selectedRows={selectedRows}
               onSelectAll={handleSelectAll}
               onSelectRow={handleSelectRow}

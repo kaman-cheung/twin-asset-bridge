@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Zone, Device, Sensor, Lease } from "@/lib/models";
+import { useNavigate } from "react-router-dom";
 
 interface QuickActionsProps {
   zones: Zone[];
@@ -11,6 +12,8 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ zones, devices, sensors, leases }: QuickActionsProps) {
+  const navigate = useNavigate();
+  
   // Calculate metrics
   const today = new Date();
   
@@ -41,26 +44,40 @@ export function QuickActions({ zones, devices, sensors, leases }: QuickActionsPr
     {
       count: zonesWithoutLeases,
       label: "Zones without a lease today",
-      severity: zonesWithoutLeases > 5 ? "high" as const : zonesWithoutLeases > 0 ? "medium" as const : "low" as const
+      severity: zonesWithoutLeases > 5 ? "high" as const : zonesWithoutLeases > 0 ? "medium" as const : "low" as const,
+      action: () => navigate("/zones", { state: { filter: "no-lease" } })
     },
     {
       count: zonesWithoutUsage,
       label: "Zones without a zone_usage today",
-      severity: zonesWithoutUsage > 10 ? "high" as const : zonesWithoutUsage > 0 ? "medium" as const : "low" as const
+      severity: zonesWithoutUsage > 10 ? "high" as const : zonesWithoutUsage > 0 ? "medium" as const : "low" as const,
+      action: () => navigate("/zones", { state: { filter: "no-usage" } })
     },
     {
       count: devicesWithoutSensors,
       label: "Devices without a sensor",
-      severity: devicesWithoutSensors > 3 ? "high" as const : devicesWithoutSensors > 0 ? "medium" as const : "low" as const
+      severity: devicesWithoutSensors > 3 ? "high" as const : devicesWithoutSensors > 0 ? "medium" as const : "low" as const,
+      action: () => navigate("/devices", { state: { filter: "no-sensors" } })
     },
     {
       count: sensorsWithoutProperties,
       label: "Sensors without a property",
-      severity: sensorsWithoutProperties > 5 ? "high" as const : sensorsWithoutProperties > 0 ? "medium" as const : "low" as const
+      severity: sensorsWithoutProperties > 5 ? "high" as const : sensorsWithoutProperties > 0 ? "medium" as const : "low" as const,
+      action: () => navigate("/devices", { state: { filter: "sensors-no-properties" } })
     }
   ].filter(item => item.count > 0); // Filter out items with count = 0
 
-  const ActionItem = ({ count, label, severity }: { count: number, label: string, severity: "low" | "medium" | "high" }) => {
+  const ActionItem = ({ 
+    count, 
+    label, 
+    severity, 
+    action 
+  }: { 
+    count: number, 
+    label: string, 
+    severity: "low" | "medium" | "high",
+    action: () => void 
+  }) => {
     const getBgColor = () => {
       switch (severity) {
         case "high": return "bg-red-50 text-red-700 border-red-200";
@@ -71,7 +88,10 @@ export function QuickActions({ zones, devices, sensors, leases }: QuickActionsPr
     };
     
     return (
-      <div className={`flex items-center justify-between p-4 rounded-lg border ${getBgColor()}`}>
+      <div 
+        className={`flex items-center justify-between p-4 rounded-lg border ${getBgColor()} cursor-pointer hover:shadow-md transition-shadow`}
+        onClick={action}
+      >
         <div className="flex items-center gap-3">
           <AlertCircle className="h-5 w-5" />
           <span>{label}</span>
@@ -99,6 +119,7 @@ export function QuickActions({ zones, devices, sensors, leases }: QuickActionsPr
               count={item.count}
               label={item.label}
               severity={item.severity}
+              action={item.action}
             />
           ))}
         </div>
