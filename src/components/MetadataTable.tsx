@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,7 +20,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [activeTab, setActiveTab] = useState<string>("assets");
   
-  // Get filtered data based on selected assets
   const filteredAssets = selectedAssetId === "all" 
     ? assets 
     : assets.filter(a => a.id === parseInt(selectedAssetId));
@@ -45,7 +43,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
 
   const handleDownload = () => {
     console.log(`Downloading ${activeTab} data as Excel`);
-    // In a real app, this would generate and download an Excel file
     alert(`Downloading ${activeTab} data...`);
   };
 
@@ -208,6 +205,14 @@ const ZonesTable = ({ zones, statusFilter }: ZonesTableProps) => {
                       statusFilter === "inactive" ? "meeting-room" : "common-area")
       );
   
+  const totalLettableArea = filteredZones.reduce((sum, zone) => {
+    return sum + (zone.lettable_area || 0);
+  }, 0);
+  
+  const totalCapacity = filteredZones.reduce((sum, zone) => {
+    return sum + (zone.capacity || 0);
+  }, 0);
+  
   return (
     <Table>
       <TableHeader>
@@ -230,24 +235,34 @@ const ZonesTable = ({ zones, statusFilter }: ZonesTableProps) => {
             <TableCell colSpan={10} className="text-center py-4">No zones found</TableCell>
           </TableRow>
         ) : (
-          filteredZones.map((zone) => {
-            const parentAsset = assets.find(a => a.id === zone.assetId);
-            
-            return (
-              <TableRow key={zone.id}>
-                <TableCell>{zone.internal_name || zone.internalName}</TableCell>
-                <TableCell>{zone.display_name || zone.displayName}</TableCell>
-                <TableCell>{zone.start_date || zone.startDate}</TableCell>
-                <TableCell>{zone.end_date || zone.endDate}</TableCell>
-                <TableCell>{zone.zone_type || zone.type || '-'}</TableCell>
-                <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
-                <TableCell>{zone.capacity || '-'}</TableCell>
-                <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
-                <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parent_zones ? '1' : '0')}</TableCell>
-                <TableCell>{zone.devices.length}</TableCell>
+          <>
+            {filteredZones.map((zone) => {
+              const parentAsset = assets.find(a => a.id === zone.assetId);
+              
+              return (
+                <TableRow key={zone.id}>
+                  <TableCell>{zone.internal_name || zone.internalName}</TableCell>
+                  <TableCell>{zone.display_name || zone.displayName}</TableCell>
+                  <TableCell>{zone.start_date || zone.startDate}</TableCell>
+                  <TableCell>{zone.end_date || zone.endDate}</TableCell>
+                  <TableCell>{zone.zone_type || zone.type || '-'}</TableCell>
+                  <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
+                  <TableCell>{zone.capacity || '-'}</TableCell>
+                  <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
+                  <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parent_zones ? '1' : '0')}</TableCell>
+                  <TableCell>{zone.devices.length}</TableCell>
+                </TableRow>
+              );
+            })}
+            {filteredZones.length > 0 && (
+              <TableRow className="border-t bg-muted/30 font-medium">
+                <TableCell colSpan={5} className="text-right py-4">TOTALS:</TableCell>
+                <TableCell>{totalLettableArea > 0 ? `${totalLettableArea} sqm` : '-'}</TableCell>
+                <TableCell>{totalCapacity > 0 ? totalCapacity : '-'}</TableCell>
+                <TableCell colSpan={3}></TableCell>
               </TableRow>
-            );
-          })
+            )}
+          </>
         )}
       </TableBody>
     </Table>
