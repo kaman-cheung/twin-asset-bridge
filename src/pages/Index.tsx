@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Building2, Home, Cpu, Activity, List, CalendarClock, Code } from "lucide-react";
@@ -26,6 +27,27 @@ const Index = () => {
       value: asset.id.toString()
     }))
   ];
+  
+  // Fix: Always ensure at least "all" is selected when all individual assets are deselected
+  const handleAssetSelection = (values: string[]) => {
+    // If the user is trying to deselect everything, default to "all"
+    if (values.length === 0) {
+      setSelectedAssetIds(["all"]);
+    } else {
+      // If "all" is being selected, only select "all" and deselect others
+      if (values.includes("all") && !selectedAssetIds.includes("all")) {
+        setSelectedAssetIds(["all"]);
+      } else {
+        // If an individual asset is being selected while "all" is selected,
+        // remove "all" from the selection
+        if (values.includes("all") && values.length > 1) {
+          setSelectedAssetIds(values.filter(v => v !== "all"));
+        } else {
+          setSelectedAssetIds(values);
+        }
+      }
+    }
+  };
   
   const filteredAssets = selectedAssetIds.includes("all") 
     ? assets 
@@ -132,7 +154,7 @@ const Index = () => {
           <div className="w-full max-w-xs">
             <MultiSelect 
               values={selectedAssetIds}
-              setValues={setSelectedAssetIds}
+              setValues={handleAssetSelection}
               options={assetOptions}
               placeholder="Select assets"
             />

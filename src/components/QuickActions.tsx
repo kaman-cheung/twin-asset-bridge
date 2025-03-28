@@ -36,9 +36,32 @@ export function QuickActions({ zones, devices, sensors, leases }: QuickActionsPr
   // For this demo, we'll assume 30% of sensors don't have properties
   const sensorsWithoutProperties = Math.round(sensors.length * 0.3);
 
+  // Only show items that have a count greater than 0
+  const actionItems = [
+    {
+      count: zonesWithoutLeases,
+      label: "Zones without a lease today",
+      severity: zonesWithoutLeases > 5 ? "high" as const : zonesWithoutLeases > 0 ? "medium" as const : "low" as const
+    },
+    {
+      count: zonesWithoutUsage,
+      label: "Zones without a zone_usage today",
+      severity: zonesWithoutUsage > 10 ? "high" as const : zonesWithoutUsage > 0 ? "medium" as const : "low" as const
+    },
+    {
+      count: devicesWithoutSensors,
+      label: "Devices without a sensor",
+      severity: devicesWithoutSensors > 3 ? "high" as const : devicesWithoutSensors > 0 ? "medium" as const : "low" as const
+    },
+    {
+      count: sensorsWithoutProperties,
+      label: "Sensors without a property",
+      severity: sensorsWithoutProperties > 5 ? "high" as const : sensorsWithoutProperties > 0 ? "medium" as const : "low" as const
+    }
+  ].filter(item => item.count > 0); // Filter out items with count = 0
+
   const ActionItem = ({ count, label, severity }: { count: number, label: string, severity: "low" | "medium" | "high" }) => {
     const getBgColor = () => {
-      if (count === 0) return "bg-green-50 text-green-700 border-green-200";
       switch (severity) {
         case "high": return "bg-red-50 text-red-700 border-red-200";
         case "medium": return "bg-amber-50 text-amber-700 border-amber-200";
@@ -50,13 +73,18 @@ export function QuickActions({ zones, devices, sensors, leases }: QuickActionsPr
     return (
       <div className={`flex items-center justify-between p-4 rounded-lg border ${getBgColor()}`}>
         <div className="flex items-center gap-3">
-          {count > 0 && <AlertCircle className="h-5 w-5" />}
+          <AlertCircle className="h-5 w-5" />
           <span>{label}</span>
         </div>
         <span className="font-semibold">{count}</span>
       </div>
     );
   };
+
+  // If there are no items to show, don't render the card
+  if (actionItems.length === 0) {
+    return null;
+  }
 
   return (
     <Card>
@@ -65,26 +93,14 @@ export function QuickActions({ zones, devices, sensors, leases }: QuickActionsPr
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2">
-          <ActionItem 
-            count={zonesWithoutLeases}
-            label="Zones without a lease today"
-            severity={zonesWithoutLeases > 5 ? "high" : zonesWithoutLeases > 0 ? "medium" : "low"}
-          />
-          <ActionItem 
-            count={zonesWithoutUsage}
-            label="Zones without a zone_usage today"
-            severity={zonesWithoutUsage > 10 ? "high" : zonesWithoutUsage > 0 ? "medium" : "low"}
-          />
-          <ActionItem 
-            count={devicesWithoutSensors}
-            label="Devices without a sensor"
-            severity={devicesWithoutSensors > 3 ? "high" : devicesWithoutSensors > 0 ? "medium" : "low"}
-          />
-          <ActionItem 
-            count={sensorsWithoutProperties}
-            label="Sensors without a property"
-            severity={sensorsWithoutProperties > 5 ? "high" : sensorsWithoutProperties > 0 ? "medium" : "low"}
-          />
+          {actionItems.map((item, index) => (
+            <ActionItem
+              key={index}
+              count={item.count}
+              label={item.label}
+              severity={item.severity}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>
