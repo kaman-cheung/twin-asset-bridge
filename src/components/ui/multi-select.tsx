@@ -29,15 +29,18 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
+  // Ensure values is always defined
+  const safeValues = values || [];
+
   const handleUnselect = (value: string) => {
-    setValues(values.filter((v) => v !== value));
+    setValues((safeValues).filter((v) => v !== value));
   };
 
   const handleSelect = (value: string) => {
-    if (values.includes(value)) {
-      setValues(values.filter((v) => v !== value));
+    if (safeValues.includes(value)) {
+      setValues(safeValues.filter((v) => v !== value));
     } else {
-      setValues([...values, value]);
+      setValues([...safeValues, value]);
     }
   };
 
@@ -58,8 +61,8 @@ export function MultiSelect({
           className={cn("min-h-10 h-auto", className)}
         >
           <div className="flex flex-wrap gap-1 mr-1">
-            {values.length === 0 && placeholder}
-            {values.map((value) => (
+            {safeValues.length === 0 && placeholder}
+            {safeValues.map((value) => (
               <Badge
                 key={value}
                 variant="secondary"
@@ -100,7 +103,7 @@ export function MultiSelect({
                 <div
                   className={cn(
                     "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                    values.includes(option.value)
+                    safeValues.includes(option.value)
                       ? "bg-primary text-primary-foreground"
                       : "opacity-50 [&_svg]:invisible"
                   )}
@@ -111,7 +114,7 @@ export function MultiSelect({
               </CommandItem>
             ))}
           </CommandGroup>
-          {values.length > 0 && (
+          {safeValues.length > 0 && (
             <div className="border-t p-1">
               <Button
                 variant="ghost"

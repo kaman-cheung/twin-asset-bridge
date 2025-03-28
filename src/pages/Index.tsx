@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Building2, Home, Cpu, Activity, List, CalendarClock, Code } from "lucide-react";
@@ -22,24 +21,19 @@ const Index = () => {
   
   const assetOptions: Option[] = [
     { label: "All Assets", value: "all" },
-    ...assets.map(asset => ({
+    ...(assets || []).map(asset => ({
       label: asset.name,
       value: asset.id.toString()
     }))
   ];
   
-  // Fix: Always ensure at least "all" is selected when all individual assets are deselected
   const handleAssetSelection = (values: string[]) => {
-    // If the user is trying to deselect everything, default to "all"
-    if (values.length === 0) {
+    if (!values || values.length === 0) {
       setSelectedAssetIds(["all"]);
     } else {
-      // If "all" is being selected, only select "all" and deselect others
       if (values.includes("all") && !selectedAssetIds.includes("all")) {
         setSelectedAssetIds(["all"]);
       } else {
-        // If an individual asset is being selected while "all" is selected,
-        // remove "all" from the selection
         if (values.includes("all") && values.length > 1) {
           setSelectedAssetIds(values.filter(v => v !== "all"));
         } else {
@@ -50,23 +44,23 @@ const Index = () => {
   };
   
   const filteredAssets = selectedAssetIds.includes("all") 
-    ? assets 
-    : assets.filter(a => selectedAssetIds.includes(a.id.toString()));
+    ? (assets || [])
+    : (assets || []).filter(a => selectedAssetIds.includes(a.id.toString()));
   
   const assetIds = filteredAssets.map(a => a.id);
-  const filteredZones = zones.filter(z => assetIds.includes(z.assetId));
+  const filteredZones = (zones || []).filter(z => assetIds.includes(z.assetId));
   const zoneIds = filteredZones.map(z => z.id);
-  const filteredDevices = devices.filter(d => zoneIds.includes(d.zoneId));
+  const filteredDevices = (devices || []).filter(d => zoneIds.includes(d.zoneId));
   const deviceIds = filteredDevices.map(d => d.id);
-  const filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
-  const filteredProcedures = procedures.filter(p => assetIds.includes(p.asset));
-  const filteredProperties = properties.filter(p => 
+  const filteredSensors = (sensors || []).filter(s => deviceIds.includes(s.deviceId));
+  const filteredProcedures = (procedures || []).filter(p => assetIds.includes(p.asset));
+  const filteredProperties = (properties || []).filter(p => 
     (p.entityType === "asset" && assetIds.includes(p.entityId)) ||
     (p.entityType === "zone" && zoneIds.includes(p.entityId)) ||
     (p.entityType === "device" && deviceIds.includes(p.entityId)) ||
     (p.entityType === "sensor" && filteredSensors.map(s => s.id).includes(p.entityId))
   );
-  const filteredLeases = leases.filter(l => 
+  const filteredLeases = (leases || []).filter(l => 
     l.zoneIds.some(zId => zoneIds.includes(zId))
   );
   
