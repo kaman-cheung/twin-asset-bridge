@@ -7,8 +7,8 @@ import { MetadataTable } from "@/components/MetadataTable";
 import { useState } from "react";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { QuickActions } from "@/components/QuickActions";
+import { Asset, Device, Lease, Sensor, Zone } from "@/lib/models";
 
-// Function to create a subcategory item for metrics cards
 const SubcategoryItem = ({ label, count }: { label: string; count: number }) => (
   <div className="flex justify-between text-xs text-muted-foreground mt-1">
     <span>{label}</span>
@@ -19,7 +19,6 @@ const SubcategoryItem = ({ label, count }: { label: string; count: number }) => 
 const Index = () => {
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>(["all"]);
   
-  // Convert assets to options for multi-select
   const assetOptions: Option[] = [
     { label: "All Assets", value: "all" },
     ...assets.map(asset => ({
@@ -28,7 +27,6 @@ const Index = () => {
     }))
   ];
   
-  // Get filtered data based on selected assets
   const filteredAssets = selectedAssetIds.includes("all") 
     ? assets 
     : assets.filter(a => selectedAssetIds.includes(a.id.toString()));
@@ -50,7 +48,6 @@ const Index = () => {
     l.zoneIds.some(zId => zoneIds.includes(zId))
   );
   
-  // Calculate counts and active/inactive metrics
   const assetCount = {
     total: filteredAssets.length,
     active: filteredAssets.filter(a => a.status === 'active').length,
@@ -61,7 +58,7 @@ const Index = () => {
   
   const zoneCount = {
     total: filteredZones.length,
-    active: filteredZones.length, // We don't have a status field for zones, assuming all are active
+    active: filteredZones.length,
     inactive: 0,
     office: filteredZones.filter(z => z.type === 'office').length,
     meetingRoom: filteredZones.filter(z => z.type === 'meeting-room').length,
@@ -88,7 +85,7 @@ const Index = () => {
 
   const propertyCount = {
     total: filteredProperties.length,
-    active: filteredProperties.length, // Assuming all properties are active
+    active: filteredProperties.length,
     inactive: 0,
     activePower: filteredProperties.filter(p => p.name.includes("active-power")).length,
     peopleCounting: filteredProperties.filter(p => p.name.includes("people-counting")).length,
@@ -115,7 +112,7 @@ const Index = () => {
 
   const procedureCount = {
     total: filteredProcedures.length,
-    active: filteredProcedures.length, // Assuming all procedures are active
+    active: filteredProcedures.length,
     inactive: 0,
     energy: filteredProcedures.filter(p => p.application_name.toLowerCase().includes('energy')).length,
     occupancy: filteredProcedures.filter(p => p.application_name.toLowerCase().includes('occupancy')).length,
@@ -142,7 +139,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Entity Count Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
@@ -297,17 +293,15 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Metadata Table Section */}
         <div className="grid gap-6">
           <MetadataTable selectedAssetId={selectedAssetIds.includes("all") ? "all" : selectedAssetIds.join(",")} />
         </div>
         
-        {/* Quick Actions Section */}
         <QuickActions 
-          zones={filteredZones}
-          devices={filteredDevices}
-          sensors={filteredSensors}
-          leases={filteredLeases}
+          zones={filteredZones as Zone[]}
+          devices={filteredDevices as Device[]}
+          sensors={filteredSensors as Sensor[]}
+          leases={filteredLeases as Lease[]}
         />
       </div>
     </Layout>

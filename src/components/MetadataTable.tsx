@@ -110,25 +110,25 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
           </TabsList>
           <ScrollArea className="h-[600px]">
             <TabsContent value="assets" className="p-0 m-0">
-              <AssetsTable assets={filteredAssets} statusFilter={statusFilter} />
+              <AssetsTable assets={filteredAssets as Asset[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="zones" className="p-0 m-0">
-              <ZonesTable zones={filteredZones} statusFilter={statusFilter} />
+              <ZonesTable zones={filteredZones as Zone[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="procedures" className="p-0 m-0">
-              <ProceduresTable procedures={filteredProcedures} statusFilter={statusFilter} />
+              <ProceduresTable procedures={filteredProcedures as Procedure[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="devices" className="p-0 m-0">
-              <DevicesTable devices={filteredDevices} statusFilter={statusFilter} />
+              <DevicesTable devices={filteredDevices as Device[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="sensors" className="p-0 m-0">
-              <SensorsTable sensors={filteredSensors} statusFilter={statusFilter} />
+              <SensorsTable sensors={filteredSensors as Sensor[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="properties" className="p-0 m-0">
-              <PropertiesTable properties={filteredProperties} statusFilter={statusFilter} />
+              <PropertiesTable properties={filteredProperties as Property[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="leases" className="p-0 m-0">
-              <LeasesTable leases={filteredLeases} statusFilter={statusFilter} />
+              <LeasesTable leases={filteredLeases as Lease[]} statusFilter={statusFilter} />
             </TabsContent>
           </ScrollArea>
         </Tabs>

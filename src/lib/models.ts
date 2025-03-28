@@ -6,7 +6,7 @@ export interface Asset {
   display_name: string;
   type: string;
   location: string;
-  status: "active" | "inactive" | "maintenance";
+  status: "active" | "inactive" | "maintenance" | string; // Updated to accept string
   zones: number[]; // References to zone IDs
   usage: string;
   address: string;
@@ -38,6 +38,8 @@ export interface Zone {
   devices: number[]; // References to device IDs
   startDate?: string; // Legacy field
   endDate?: string; // Legacy field
+  usage?: string; // Added usage property
+  zone_usage?: string; // Added zone_usage property
 }
 
 export interface Device {
@@ -66,7 +68,7 @@ export interface Sensor {
   display_name: string;
   type: string;
   unit: string;
-  status: "active" | "inactive" | "error";
+  status: "active" | "inactive" | "error" | string; // Updated to accept string
   deviceId: number; // Reference to parent device
   device?: number; // Alternative reference to parent device
   lastReading?: {
