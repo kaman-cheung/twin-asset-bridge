@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { Building2, Home, Cpu, Activity, List, CalendarClock, Code } from "lucide-react";
@@ -6,7 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { assets, zones, devices, sensors, properties, leases, procedures } from "@/lib/sample-data";
 import { MetadataTable } from "@/components/MetadataTable";
 import { useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelect, Option } from "@/components/ui/multi-select";
+import { QuickActions } from "@/components/QuickActions";
 
 // Function to create a subcategory item for metrics cards
 const SubcategoryItem = ({ label, count }: { label: string; count: number }) => (
@@ -17,12 +17,21 @@ const SubcategoryItem = ({ label, count }: { label: string; count: number }) => 
 );
 
 const Index = () => {
-  const [selectedAssetId, setSelectedAssetId] = useState<string>("all");
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>(["all"]);
+  
+  // Convert assets to options for multi-select
+  const assetOptions: Option[] = [
+    { label: "All Assets", value: "all" },
+    ...assets.map(asset => ({
+      label: asset.name,
+      value: asset.id.toString()
+    }))
+  ];
   
   // Get filtered data based on selected assets
-  const filteredAssets = selectedAssetId === "all" 
+  const filteredAssets = selectedAssetIds.includes("all") 
     ? assets 
-    : assets.filter(a => a.id === parseInt(selectedAssetId));
+    : assets.filter(a => selectedAssetIds.includes(a.id.toString()));
   
   const assetIds = filteredAssets.map(a => a.id);
   const filteredZones = zones.filter(z => assetIds.includes(z.assetId));
@@ -124,19 +133,12 @@ const Index = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight">Digital Twin Dashboard</h1>
           <div className="w-full max-w-xs">
-            <Select value={selectedAssetId} onValueChange={setSelectedAssetId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select asset" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Assets</SelectItem>
-                {assets.map(asset => (
-                  <SelectItem key={asset.id} value={asset.id.toString()}>
-                    {asset.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelect 
+              values={selectedAssetIds}
+              setValues={setSelectedAssetIds}
+              options={assetOptions}
+              placeholder="Select assets"
+            />
           </div>
         </div>
 
@@ -297,8 +299,16 @@ const Index = () => {
 
         {/* Metadata Table Section */}
         <div className="grid gap-6">
-          <MetadataTable selectedAssetId={selectedAssetId} />
+          <MetadataTable selectedAssetId={selectedAssetIds.includes("all") ? "all" : selectedAssetIds.join(",")} />
         </div>
+        
+        {/* Quick Actions Section */}
+        <QuickActions 
+          zones={filteredZones}
+          devices={filteredDevices}
+          sensors={filteredSensors}
+          leases={filteredLeases}
+        />
       </div>
     </Layout>
   );

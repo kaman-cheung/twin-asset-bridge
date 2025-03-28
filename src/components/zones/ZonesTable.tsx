@@ -26,6 +26,15 @@ export function ZonesTable({
     alert("Downloading zones data...");
   };
 
+  // Calculate totals for lettable area and capacity
+  const totalLettableArea = zones.reduce((sum, zone) => {
+    return sum + (zone.lettable_area || 0);
+  }, 0);
+  
+  const totalCapacity = zones.reduce((sum, zone) => {
+    return sum + (zone.capacity || 0);
+  }, 0);
+
   return (
     <div className="border rounded-md">
       <div className="overflow-x-auto">
@@ -132,6 +141,15 @@ export function ZonesTable({
                 </tr>
               );
             })}
+            {/* Totals row */}
+            {zones.length > 0 && (
+              <tr className="border-t bg-muted/30 font-medium">
+                <td colSpan={6} className="p-2 text-right">TOTALS:</td>
+                <td className="p-2">{totalLettableArea > 0 ? `${totalLettableArea} sqm` : '-'}</td>
+                <td className="p-2">{totalCapacity > 0 ? totalCapacity : '-'}</td>
+                <td colSpan={4}></td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
