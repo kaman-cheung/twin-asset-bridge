@@ -1,9 +1,25 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChevronRight, Download, ChevronsDown, Cpu } from "lucide-react";
 import { Zone } from "@/lib/models";
 import { getSensorsByZone } from "@/lib/sample-data";
+import { useState } from "react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface ZonesTableProps {
   zones: Zone[];
@@ -20,10 +36,18 @@ export function ZonesTable({
   onSelectRow, 
   onSelectZone 
 }: ZonesTableProps) {
+  const [sensorDialogOpen, setSensorDialogOpen] = useState(false);
+  const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
+  
   const handleDownload = () => {
     console.log("Downloading zones data as Excel");
     // In a real app, this would generate and download an Excel file
     alert("Downloading zones data...");
+  };
+
+  const handleShowSensors = (zoneId: number) => {
+    setSelectedZoneId(zoneId);
+    setSensorDialogOpen(true);
   };
 
   // Calculate totals for lettable area and capacity
@@ -34,6 +58,10 @@ export function ZonesTable({
   const totalCapacity = zones.reduce((sum, zone) => {
     return sum + (zone.capacity || 0);
   }, 0);
+
+  // Get sensors for the selected zone
+  const selectedZoneSensors = selectedZoneId ? getSensorsByZone(selectedZoneId) : [];
+  const selectedZone = selectedZoneId ? zones.find(z => z.id === selectedZoneId) : null;
 
   return (
     <div className="border rounded-md">
@@ -96,49 +124,74 @@ export function ZonesTable({
               const zoneSensors = getSensorsByZone(zone.id).length;
               
               return (
-                <tr 
-                  key={zone.id} 
-                  className="border-t hover:bg-muted/30 cursor-pointer"
-                  onClick={() => onSelectZone(zone.id)}
-                >
-                  <td className="p-2" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox 
-                      checked={selectedRows.includes(zone.id)}
-                      onCheckedChange={() => onSelectRow(zone.id)}
-                    />
-                  </td>
-                  <td className="p-2">{zone.internal_name || zone.internalName}</td>
-                  <td className="p-2">{zone.display_name || zone.displayName}</td>
-                  <td className="p-2">{zone.start_date}</td>
-                  <td className="p-2">{zone.end_date}</td>
-                  <td className="p-2">{zone.zone_type || zone.type || '-'}</td>
-                  <td className="p-2">{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</td>
-                  <td className="p-2">{zone.capacity || '-'}</td>
-                  <td className="p-2">{zone.asset || zone.assetId || '-'}</td>
-                  <td className="p-2">{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</td>
-                  <td className="p-2">
-                    {zoneDevices > 0 ? (
-                      <div className="text-xs">
-                        <span className="font-semibold">{zoneDevices}</span> device{zoneDevices !== 1 ? 's' : ''}, {' '}
-                        <span className="font-semibold">{zoneSensors}</span> sensor{zoneSensors !== 1 ? 's' : ''}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No devices</span>
-                    )}
-                  </td>
-                  <td className="p-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectZone(zone.id);
-                      }}
+                <ContextMenu key={zone.id}>
+                  <ContextMenuTrigger asChild>
+                    <tr 
+                      className="border-t hover:bg-muted/30 cursor-pointer"
+                      onClick={() => onSelectZone(zone.id)}
                     >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
+                      <td className="p-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            checked={selectedRows.includes(zone.id)}
+                            onCheckedChange={() => onSelectRow(zone.id)}
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="p-0 h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShowSensors(zone.id);
+                            }}
+                          >
+                            <ChevronsDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="p-2">{zone.internal_name || zone.internalName}</td>
+                      <td className="p-2">{zone.display_name || zone.displayName}</td>
+                      <td className="p-2">{zone.start_date}</td>
+                      <td className="p-2">{zone.end_date}</td>
+                      <td className="p-2">{zone.zone_type || zone.type || '-'}</td>
+                      <td className="p-2">{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</td>
+                      <td className="p-2">{zone.capacity || '-'}</td>
+                      <td className="p-2">{zone.asset || zone.assetId || '-'}</td>
+                      <td className="p-2">{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</td>
+                      <td className="p-2">
+                        {zoneDevices > 0 ? (
+                          <div className="text-xs">
+                            <span className="font-semibold">{zoneDevices}</span> device{zoneDevices !== 1 ? 's' : ''}, {' '}
+                            <span className="font-semibold">{zoneSensors}</span> sensor{zoneSensors !== 1 ? 's' : ''}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No devices</span>
+                        )}
+                      </td>
+                      <td className="p-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectZone(zone.id);
+                          }}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-56">
+                    <ContextMenuItem 
+                      className="flex items-center gap-2"
+                      onClick={() => handleShowSensors(zone.id)}
+                    >
+                      <Cpu className="h-4 w-4" />
+                      <span>View Zone Sensors</span>
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
             {/* Totals row */}
@@ -153,6 +206,66 @@ export function ZonesTable({
           </tbody>
         </table>
       </div>
+
+      {/* Sensors Dialog */}
+      <Dialog open={sensorDialogOpen} onOpenChange={setSensorDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Cpu className="h-5 w-5 text-purple-500" />
+              Sensors for Zone: {selectedZone ? (selectedZone.display_name || selectedZone.displayName) : ''}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {selectedZoneSensors.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sensor Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead>Last Reading</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {selectedZoneSensors.map((sensor) => (
+                    <TableRow key={sensor.id}>
+                      <TableCell>{sensor.display_name || sensor.name}</TableCell>
+                      <TableCell>{sensor.type}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
+                          sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {sensor.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{sensor.unit || '-'}</TableCell>
+                      <TableCell>
+                        {sensor.lastReading ? (
+                          <div>
+                            <div>{sensor.lastReading.value} {sensor.unit}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(sensor.lastReading.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+                        ) : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No sensors found for this zone
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
