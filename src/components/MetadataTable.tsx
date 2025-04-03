@@ -1,15 +1,23 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, Server, Cpu, List, CalendarClock, Code, Download } from "lucide-react";
+import { Building, Server, Cpu, List, CalendarClock, Code, Download, ChevronsDown } from "lucide-react";
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { assets, zones, devices, sensors, properties, leases, procedures } from "@/lib/sample-data";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { assets, zones, devices, sensors, properties, leases, procedures, getSensorsByZone } from "@/lib/sample-data";
 import { Asset, Zone, Device, Sensor, Property, Lease, Procedure } from "@/lib/models";
 
 interface MetadataTableProps {
@@ -19,6 +27,8 @@ interface MetadataTableProps {
 export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [activeTab, setActiveTab] = useState<string>("assets");
+  const [sensorDialogOpen, setSensorDialogOpen] = useState(false);
+  const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
   
   const filteredAssets = selectedAssetId === "all" 
     ? assets 
@@ -40,6 +50,15 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const filteredLeases = leases.filter(l => 
     l.zoneIds.some(zId => zoneIds.includes(zId))
   );
+
+  const handleShowSensors = (zoneId: number) => {
+    setSelectedZoneId(zoneId);
+    setSensorDialogOpen(true);
+  };
+  
+  // Get selected zone and its sensors
+  const selectedZone = selectedZoneId ? zones.find(z => z.id === selectedZoneId) : null;
+  const selectedZoneSensors = selectedZoneId ? getSensorsByZone(selectedZoneId) : [];
 
   const handleDownload = () => {
     console.log(`Downloading ${activeTab} data as Excel`);
@@ -88,10 +107,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               <Code className="w-4 h-4" />
               <span className="hidden sm:inline">Procedures</span>
             </TabsTrigger>
-            <TabsTrigger value="devices" className="flex items-center gap-2">
-              <Server className="w-4 h-4" />
-              <span className="hidden sm:inline">Devices</span>
-            </TabsTrigger>
             <TabsTrigger value="sensors" className="flex items-center gap-2">
               <Cpu className="w-4 h-4" />
               <span className="hidden sm:inline">Sensors</span>
@@ -104,19 +119,24 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               <CalendarClock className="w-4 h-4" />
               <span className="hidden sm:inline">Leases</span>
             </TabsTrigger>
+            <TabsTrigger value="other" className="flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              <span className="hidden sm:inline">Other</span>
+            </TabsTrigger>
           </TabsList>
           <ScrollArea className="h-[600px]">
             <TabsContent value="assets" className="p-0 m-0">
               <AssetsTable assets={filteredAssets as Asset[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="zones" className="p-0 m-0">
-              <ZonesTable zones={filteredZones as Zone[]} statusFilter={statusFilter} />
+              <ZonesTable 
+                zones={filteredZones as Zone[]} 
+                statusFilter={statusFilter} 
+                onShowSensors={handleShowSensors} 
+              />
             </TabsContent>
             <TabsContent value="procedures" className="p-0 m-0">
               <ProceduresTable procedures={filteredProcedures as Procedure[]} statusFilter={statusFilter} />
-            </TabsContent>
-            <TabsContent value="devices" className="p-0 m-0">
-              <DevicesTable devices={filteredDevices as Device[]} statusFilter={statusFilter} />
             </TabsContent>
             <TabsContent value="sensors" className="p-0 m-0">
               <SensorsTable sensors={filteredSensors as Sensor[]} statusFilter={statusFilter} />
@@ -127,9 +147,72 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
             <TabsContent value="leases" className="p-0 m-0">
               <LeasesTable leases={filteredLeases as Lease[]} statusFilter={statusFilter} />
             </TabsContent>
+            <TabsContent value="other" className="p-0 m-0">
+              <DevicesTable devices={filteredDevices as Device[]} statusFilter={statusFilter} />
+            </TabsContent>
           </ScrollArea>
         </Tabs>
       </CardContent>
+
+      {/* Sensors Dialog */}
+      <Dialog open={sensorDialogOpen} onOpenChange={setSensorDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Cpu className="h-5 w-5 text-purple-500" />
+              Sensors for Zone: {selectedZone ? (selectedZone.display_name || selectedZone.displayName) : ''}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {selectedZoneSensors.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sensor Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead>Last Reading</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {selectedZoneSensors.map((sensor) => (
+                    <TableRow key={sensor.id}>
+                      <TableCell>{sensor.display_name || sensor.name}</TableCell>
+                      <TableCell>{sensor.type}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
+                          sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {sensor.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{sensor.unit || '-'}</TableCell>
+                      <TableCell>
+                        {sensor.lastReading ? (
+                          <div>
+                            <div>{sensor.lastReading.value} {sensor.unit}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(sensor.lastReading.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+                        ) : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No sensors found for this zone
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -195,9 +278,10 @@ const AssetsTable = ({ assets, statusFilter }: AssetsTableProps) => {
 interface ZonesTableProps {
   zones: Zone[];
   statusFilter: string;
+  onShowSensors: (zoneId: number) => void;
 }
 
-const ZonesTable = ({ zones, statusFilter }: ZonesTableProps) => {
+const ZonesTable = ({ zones, statusFilter, onShowSensors }: ZonesTableProps) => {
   const filteredZones = statusFilter === "all" 
     ? zones 
     : zones.filter(zone => 
@@ -217,6 +301,7 @@ const ZonesTable = ({ zones, statusFilter }: ZonesTableProps) => {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-10"></TableHead>
           <TableHead>Internal Name</TableHead>
           <TableHead>Display Name</TableHead>
           <TableHead>Start Date</TableHead>
@@ -232,30 +317,67 @@ const ZonesTable = ({ zones, statusFilter }: ZonesTableProps) => {
       <TableBody>
         {filteredZones.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={10} className="text-center py-4">No zones found</TableCell>
+            <TableCell colSpan={11} className="text-center py-4">No zones found</TableCell>
           </TableRow>
         ) : (
           <>
             {filteredZones.map((zone) => {
               const parentAsset = assets.find(a => a.id === zone.assetId);
+              const zoneSensors = getSensorsByZone(zone.id).length;
               
               return (
-                <TableRow key={zone.id}>
-                  <TableCell>{zone.internal_name || zone.internalName}</TableCell>
-                  <TableCell>{zone.display_name || zone.displayName}</TableCell>
-                  <TableCell>{zone.start_date || zone.startDate}</TableCell>
-                  <TableCell>{zone.end_date || zone.endDate}</TableCell>
-                  <TableCell>{zone.zone_type || zone.type || '-'}</TableCell>
-                  <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
-                  <TableCell>{zone.capacity || '-'}</TableCell>
-                  <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
-                  <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parent_zones ? '1' : '0')}</TableCell>
-                  <TableCell>{zone.devices.length}</TableCell>
-                </TableRow>
+                <ContextMenu key={zone.id}>
+                  <ContextMenuTrigger asChild>
+                    <TableRow className="hover:bg-muted/30 cursor-pointer">
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="p-0 h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onShowSensors(zone.id);
+                          }}
+                        >
+                          <ChevronsDown className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                      <TableCell>{zone.internal_name || zone.internalName}</TableCell>
+                      <TableCell>{zone.display_name || zone.displayName}</TableCell>
+                      <TableCell>{zone.start_date || zone.startDate}</TableCell>
+                      <TableCell>{zone.end_date || zone.endDate}</TableCell>
+                      <TableCell>{zone.zone_type || zone.type || '-'}</TableCell>
+                      <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
+                      <TableCell>{zone.capacity || '-'}</TableCell>
+                      <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
+                      <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</TableCell>
+                      <TableCell>
+                        {zone.devices.length > 0 ? (
+                          <div className="text-xs">
+                            <span className="font-semibold">{zone.devices.length}</span> device{zone.devices.length !== 1 ? 's' : ''}, {' '}
+                            <span className="font-semibold">{zoneSensors}</span> sensor{zoneSensors !== 1 ? 's' : ''}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No devices</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-56">
+                    <ContextMenuItem 
+                      className="flex items-center gap-2"
+                      onClick={() => onShowSensors(zone.id)}
+                    >
+                      <Cpu className="h-4 w-4" />
+                      <span>View Zone Sensors</span>
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
             {filteredZones.length > 0 && (
               <TableRow className="border-t bg-muted/30 font-medium">
+                <TableCell></TableCell>
                 <TableCell colSpan={5} className="text-right py-4">TOTALS:</TableCell>
                 <TableCell>{totalLettableArea > 0 ? `${totalLettableArea} sqm` : '-'}</TableCell>
                 <TableCell>{totalCapacity > 0 ? totalCapacity : '-'}</TableCell>
