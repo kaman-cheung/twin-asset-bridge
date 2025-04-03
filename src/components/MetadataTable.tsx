@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -65,26 +64,12 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
     setDetailsSheetOpen(true);
   };
   
-  // Get selected zone and its sensors
   const selectedZone = selectedZoneId ? zones.find(z => z.id === selectedZoneId) : null;
   const selectedZoneSensors = selectedZoneId ? getSensorsByZone(selectedZoneId) : [];
   
-  // Get leases for selected zone
   const selectedZoneLeases = selectedZoneId 
     ? leases.filter(lease => lease.zoneIds.includes(selectedZoneId))
     : [];
-
-  // Get sensor properties
-  const getSensorProperties = (sensorId: number) => {
-    return properties.filter(p => p.entityType === "sensor" && p.entityId === sensorId);
-  };
-
-  // Get device information for a sensor
-  const getDeviceForSensor = (sensorId: number) => {
-    const sensor = sensors.find(s => s.id === sensorId);
-    if (!sensor) return null;
-    return devices.find(d => d.id === sensor.deviceId);
-  };
 
   const handleDownload = () => {
     console.log(`Downloading ${activeTab} data as Excel`);
@@ -181,7 +166,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
         </Tabs>
       </CardContent>
 
-      {/* Sensors Dialog */}
       <Dialog open={sensorDialogOpen} onOpenChange={setSensorDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
           <DialogHeader>
@@ -244,9 +228,8 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Zone Details Sheet */}
       <Sheet open={detailsSheetOpen} onOpenChange={setDetailsSheetOpen}>
-        <SheetContent className="w-[700px] sm:w-[600px] overflow-auto">
+        <SheetContent className="w-full md:w-1/2 overflow-auto">
           <SheetHeader className="mb-4 flex flex-row justify-between items-start">
             <div>
               <SheetTitle className="mb-2 flex items-center gap-2">
@@ -317,7 +300,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                             </AccordionTrigger>
                             
                             <AccordionContent>
-                              {/* Sensor readings */}
                               {sensor.lastReading && (
                                 <div className="mb-4 bg-muted/30 p-3 rounded-md">
                                   <div className="font-medium">{sensor.lastReading.value} {sensor.unit}</div>
@@ -327,7 +309,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                                 </div>
                               )}
                               
-                              {/* Sensor properties */}
                               <div className="mt-3">
                                 <h5 className="text-xs font-medium mb-2">Properties</h5>
                                 <div className="grid grid-cols-2 gap-2">
@@ -385,7 +366,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                 {selectedZoneLeases.length > 0 ? (
                   <div className="space-y-4">
                     {selectedZoneLeases.map((lease) => {
-                      // Calculate status
                       const now = new Date();
                       const endDate = new Date(lease.endDate || lease.contractual_end_date);
                       const isActive = endDate > now;
@@ -839,8 +819,11 @@ const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => 
   const filteredProperties = statusFilter === "all" 
     ? properties 
     : properties.filter(property => 
-        property.status === statusFilter || 
-        (statusFilter === "active" && property.status !== "inactive" && property.status !== "archived")
+        statusFilter === "active" 
+          ? property.entityType === "asset" || property.entityType === "zone"
+          : statusFilter === "inactive"
+            ? property.entityType === "device" 
+            : property.entityType === "sensor"
       );
   
   return (
@@ -852,7 +835,7 @@ const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => 
           <TableHead>Property Type</TableHead>
           <TableHead>Value</TableHead>
           <TableHead>Unit</TableHead>
-          <TableHead>Source</TableHead>
+          <TableHead>Source System</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -862,7 +845,6 @@ const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => 
           </TableRow>
         ) : (
           filteredProperties.map((property) => {
-            // Get entity name based on entity type and ID
             let entityName = '-';
             if (property.entityType === 'asset') {
               const asset = assets.find(a => a.id === property.entityId);
@@ -888,7 +870,7 @@ const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => 
                 <TableCell>{property.property_type || property.type || '-'}</TableCell>
                 <TableCell>{property.value || '-'}</TableCell>
                 <TableCell>{property.unit || '-'}</TableCell>
-                <TableCell>{property.source || '-'}</TableCell>
+                <TableCell>{property.system || '-'}</TableCell>
               </TableRow>
             );
           })
@@ -937,9 +919,8 @@ const LeasesTable = ({ leases, statusFilter }: LeasesTableProps) => {
             const endDate = new Date(lease.endDate || lease.contractual_end_date);
             const isActive = endDate > now;
             
-            // Get zone names
             const leaseZones = zones.filter(z => lease.zoneIds.includes(z.id));
-            const zoneNames = leaseZones.map(z => z.display_name || z.displayName || z.name).join(', ');
+            const zoneNames = leaseZones.map(z => z.display_name || z.displayName || z.internal_name || z.internalName).join(', ');
             
             return (
               <TableRow key={lease.id}>
@@ -948,7 +929,7 @@ const LeasesTable = ({ leases, statusFilter }: LeasesTableProps) => {
                 <TableCell>{lease.contractual_start_date || lease.startDate}</TableCell>
                 <TableCell>{lease.contractual_end_date || lease.endDate}</TableCell>
                 <TableCell>{lease.occupation_start_date || lease.startDate}</TableCell>
-                <TableCell>{lease.occupation_end_date || lease.endDate || '-'}</TableCell>
+                <TableCell>{lease.endDate || '-'}</TableCell>
                 <TableCell>
                   <div className="max-w-[200px] truncate" title={zoneNames}>
                     {zoneNames || '-'}
