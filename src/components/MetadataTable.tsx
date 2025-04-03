@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, Server, Cpu, List, CalendarClock, Code, Download, ChevronsDown } from "lucide-react";
+import { Building, Server, Cpu, List, CalendarClock, Code, Download, ChevronsDown, PanelRight, X } from "lucide-react";
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -17,6 +16,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { assets, zones, devices, sensors, properties, leases, procedures, getSensorsByZone } from "@/lib/sample-data";
 import { Asset, Zone, Device, Sensor, Property, Lease, Procedure } from "@/lib/models";
 
@@ -29,6 +29,8 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const [activeTab, setActiveTab] = useState<string>("assets");
   const [sensorDialogOpen, setSensorDialogOpen] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
+  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
+  const [detailsActiveTab, setDetailsActiveTab] = useState("iot");
   
   const filteredAssets = selectedAssetId === "all" 
     ? assets 
@@ -55,10 +57,25 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
     setSelectedZoneId(zoneId);
     setSensorDialogOpen(true);
   };
+
+  const handleShowZoneDetails = (zoneId: number) => {
+    setSelectedZoneId(zoneId);
+    setDetailsSheetOpen(true);
+  };
   
   // Get selected zone and its sensors
   const selectedZone = selectedZoneId ? zones.find(z => z.id === selectedZoneId) : null;
   const selectedZoneSensors = selectedZoneId ? getSensorsByZone(selectedZoneId) : [];
+  
+  // Get leases for selected zone
+  const selectedZoneLeases = selectedZoneId 
+    ? leases.filter(lease => lease.zoneIds.includes(selectedZoneId))
+    : [];
+
+  // Get sensor properties
+  const getSensorProperties = (sensorId: number) => {
+    return properties.filter(p => p.entityType === "sensor" && p.entityId === sensorId);
+  };
 
   const handleDownload = () => {
     console.log(`Downloading ${activeTab} data as Excel`);
@@ -132,7 +149,8 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               <ZonesTable 
                 zones={filteredZones as Zone[]} 
                 statusFilter={statusFilter} 
-                onShowSensors={handleShowSensors} 
+                onShowSensors={handleShowSensors}
+                onShowZoneDetails={handleShowZoneDetails}
               />
             </TabsContent>
             <TabsContent value="procedures" className="p-0 m-0">
@@ -213,6 +231,180 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Zone Details Sheet */}
+      <Sheet open={detailsSheetOpen} onOpenChange={setDetailsSheetOpen}>
+        <SheetContent className="w-[700px] sm:w-[600px] overflow-auto">
+          <SheetHeader className="mb-4 flex flex-row justify-between items-start">
+            <div>
+              <SheetTitle className="mb-2 flex items-center gap-2">
+                <Building className="h-5 w-5 text-blue-500" />
+                {selectedZone ? (selectedZone.display_name || selectedZone.displayName) : 'Zone Details'}
+              </SheetTitle>
+              <p className="text-muted-foreground text-sm">
+                {selectedZone ? 
+                  `Type: ${selectedZone.zone_type || selectedZone.type || 'N/A'} · Usage: ${selectedZone.usage || selectedZone.zone_usage || 'N/A'}` : 
+                  ''}
+              </p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setDetailsSheetOpen(false)}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </SheetHeader>
+
+          <Tabs defaultValue="iot" className="w-full mt-6" onValueChange={setDetailsActiveTab}>
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="iot" className="flex items-center gap-2">
+                <Cpu className="w-4 h-4" />
+                <span>IoT</span>
+              </TabsTrigger>
+              <TabsTrigger value="lease" className="flex items-center gap-2">
+                <CalendarClock className="w-4 h-4" />
+                <span>Lease</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="iot" className="p-0 m-0">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Sensors ({selectedZoneSensors.length})</h3>
+                
+                {selectedZoneSensors.length > 0 ? (
+                  <div className="space-y-6">
+                    {selectedZoneSensors.map((sensor) => (
+                      <div key={sensor.id} className="border rounded-md p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-medium">{sensor.display_name || sensor.name}</h4>
+                            <div className="text-xs text-muted-foreground">
+                              ID: {sensor.id} · Type: {sensor.type} · Unit: {sensor.unit || 'N/A'}
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
+                            sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {sensor.status}
+                          </span>
+                        </div>
+
+                        {/* Sensor readings */}
+                        {sensor.lastReading && (
+                          <div className="mb-2 bg-muted/30 p-2 rounded-md">
+                            <div className="font-medium">{sensor.lastReading.value} {sensor.unit}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Last updated: {new Date(sensor.lastReading.timestamp).toLocaleString()}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Sensor properties */}
+                        <div className="mt-3">
+                          <h5 className="text-xs font-medium mb-1">Properties</h5>
+                          <div className="grid grid-cols-2 gap-2">
+                            {getSensorProperties(sensor.id).map((property) => (
+                              <div key={property.id} className="text-xs border rounded-md p-2">
+                                <div className="font-medium">{property.display_name || property.name}</div>
+                                <div className="text-muted-foreground">Value: {property.value}</div>
+                                <div className="text-muted-foreground">Type: {property.property_type || property.type}</div>
+                              </div>
+                            ))}
+                            {getSensorProperties(sensor.id).length === 0 && (
+                              <div className="text-xs text-muted-foreground col-span-2 py-2">
+                                No properties found for this sensor
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground border rounded-md">
+                    No sensors found for this zone
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="lease" className="p-0 m-0">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Leases ({selectedZoneLeases.length})</h3>
+                
+                {selectedZoneLeases.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedZoneLeases.map((lease) => {
+                      // Calculate status
+                      const now = new Date();
+                      const endDate = new Date(lease.endDate || lease.contractual_end_date);
+                      const isActive = endDate > now;
+                      
+                      return (
+                        <div key={lease.id} className="border rounded-md p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h4 className="font-medium">{lease.tenant_display_name || lease.tenant}</h4>
+                              <div className="text-xs text-muted-foreground">
+                                Industry: {lease.tenant_industry || 'N/A'}
+                              </div>
+                            </div>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <h5 className="text-xs font-medium mb-1">Contract Period</h5>
+                              <div className="text-sm">
+                                <div>Start: {lease.contractual_start_date || lease.startDate}</div>
+                                <div>End: {lease.contractual_end_date || lease.endDate}</div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h5 className="text-xs font-medium mb-1">Occupation Period</h5>
+                              <div className="text-sm">
+                                <div>Start: {lease.occupation_start_date || lease.startDate}</div>
+                                <div>End: {lease.endDate || 'N/A'}</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {lease.usage && (
+                            <div className="mt-3 text-sm">
+                              <h5 className="text-xs font-medium mb-1">Usage</h5>
+                              <p>{lease.usage}</p>
+                            </div>
+                          )}
+                          
+                          {lease.is_sub_lease !== undefined && (
+                            <div className="mt-2 text-xs">
+                              {lease.is_sub_lease ? 'Sub-lease' : 'Primary lease'}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground border rounded-md">
+                    No leases found for this zone
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }
@@ -279,9 +471,10 @@ interface ZonesTableProps {
   zones: Zone[];
   statusFilter: string;
   onShowSensors: (zoneId: number) => void;
+  onShowZoneDetails: (zoneId: number) => void;
 }
 
-const ZonesTable = ({ zones, statusFilter, onShowSensors }: ZonesTableProps) => {
+const ZonesTable = ({ zones, statusFilter, onShowSensors, onShowZoneDetails }: ZonesTableProps) => {
   const filteredZones = statusFilter === "all" 
     ? zones 
     : zones.filter(zone => 
@@ -328,18 +521,18 @@ const ZonesTable = ({ zones, statusFilter, onShowSensors }: ZonesTableProps) => 
               return (
                 <ContextMenu key={zone.id}>
                   <ContextMenuTrigger asChild>
-                    <TableRow className="hover:bg-muted/30 cursor-pointer">
+                    <TableRow className="hover:bg-muted/30 cursor-pointer" onClick={() => onShowZoneDetails(zone.id)}>
                       <TableCell>
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="p-0 h-6 w-6"
+                          className="p-0 h-6 w-6 flex items-center justify-center"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onShowSensors(zone.id);
+                            onShowZoneDetails(zone.id);
                           }}
                         >
-                          <ChevronsDown className="h-4 w-4" />
+                          <PanelRight className="h-4 w-4" />
                         </Button>
                       </TableCell>
                       <TableCell>{zone.internal_name || zone.internalName}</TableCell>
@@ -364,6 +557,13 @@ const ZonesTable = ({ zones, statusFilter, onShowSensors }: ZonesTableProps) => 
                     </TableRow>
                   </ContextMenuTrigger>
                   <ContextMenuContent className="w-56">
+                    <ContextMenuItem 
+                      className="flex items-center gap-2"
+                      onClick={() => onShowZoneDetails(zone.id)}
+                    >
+                      <PanelRight className="h-4 w-4" />
+                      <span>View Zone Details</span>
+                    </ContextMenuItem>
                     <ContextMenuItem 
                       className="flex items-center gap-2"
                       onClick={() => onShowSensors(zone.id)}
