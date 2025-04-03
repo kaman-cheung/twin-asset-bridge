@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -776,4 +777,195 @@ const SensorsTable = ({ sensors, statusFilter }: SensorsTableProps) => {
           <TableHead>End Date</TableHead>
           <TableHead>External ID</TableHead>
           <TableHead>Provider</TableHead>
-          <TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Unit</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Last Reading</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredSensors.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={10} className="text-center py-4">No sensors found</TableCell>
+          </TableRow>
+        ) : (
+          filteredSensors.map((sensor) => {
+            const device = devices.find(d => d.id === sensor.deviceId);
+            
+            return (
+              <TableRow key={sensor.id}>
+                <TableCell>{sensor.internal_name || sensor.name}</TableCell>
+                <TableCell>{sensor.display_name || sensor.name}</TableCell>
+                <TableCell>{sensor.start_date || '-'}</TableCell>
+                <TableCell>{sensor.end_date || '-'}</TableCell>
+                <TableCell>{sensor.external_id || '-'}</TableCell>
+                <TableCell>{sensor.provider || device?.provider || '-'}</TableCell>
+                <TableCell>{sensor.type || '-'}</TableCell>
+                <TableCell>{sensor.unit || '-'}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
+                    sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {sensor.status}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  {sensor.lastReading ? (
+                    <div>
+                      <div>{sensor.lastReading.value} {sensor.unit}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(sensor.lastReading.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  ) : '-'}
+                </TableCell>
+              </TableRow>
+            );
+          })
+        )}
+      </TableBody>
+    </Table>
+  );
+};
+
+interface PropertiesTableProps {
+  properties: Property[];
+  statusFilter: string;
+}
+
+const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => {
+  const filteredProperties = statusFilter === "all" 
+    ? properties 
+    : properties.filter(property => 
+        property.status === statusFilter || 
+        (statusFilter === "active" && property.status !== "inactive" && property.status !== "archived")
+      );
+  
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Display Name</TableHead>
+          <TableHead>Entity Type</TableHead>
+          <TableHead>Property Type</TableHead>
+          <TableHead>Value</TableHead>
+          <TableHead>Unit</TableHead>
+          <TableHead>Source</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredProperties.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={6} className="text-center py-4">No properties found</TableCell>
+          </TableRow>
+        ) : (
+          filteredProperties.map((property) => {
+            // Get entity name based on entity type and ID
+            let entityName = '-';
+            if (property.entityType === 'asset') {
+              const asset = assets.find(a => a.id === property.entityId);
+              entityName = asset ? asset.name : '-';
+            } else if (property.entityType === 'zone') {
+              const zone = zones.find(z => z.id === property.entityId);
+              entityName = zone ? (zone.display_name || zone.displayName) : '-';
+            } else if (property.entityType === 'device') {
+              const device = devices.find(d => d.id === property.entityId);
+              entityName = device ? device.name : '-';
+            } else if (property.entityType === 'sensor') {
+              const sensor = sensors.find(s => s.id === property.entityId);
+              entityName = sensor ? sensor.name : '-';
+            }
+            
+            return (
+              <TableRow key={property.id}>
+                <TableCell>{property.display_name || property.name}</TableCell>
+                <TableCell>
+                  {property.entityType.charAt(0).toUpperCase() + property.entityType.slice(1)}
+                  <div className="text-xs text-muted-foreground">{entityName}</div>
+                </TableCell>
+                <TableCell>{property.property_type || property.type || '-'}</TableCell>
+                <TableCell>{property.value || '-'}</TableCell>
+                <TableCell>{property.unit || '-'}</TableCell>
+                <TableCell>{property.source || '-'}</TableCell>
+              </TableRow>
+            );
+          })
+        )}
+      </TableBody>
+    </Table>
+  );
+};
+
+interface LeasesTableProps {
+  leases: Lease[];
+  statusFilter: string;
+}
+
+const LeasesTable = ({ leases, statusFilter }: LeasesTableProps) => {
+  const now = new Date();
+  const filteredLeases = statusFilter === "all" 
+    ? leases 
+    : leases.filter(lease => {
+        const endDate = new Date(lease.endDate || lease.contractual_end_date);
+        const isActive = endDate > now;
+        return (statusFilter === "active" && isActive) || (statusFilter === "inactive" && !isActive);
+      });
+  
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Tenant</TableHead>
+          <TableHead>Industry</TableHead>
+          <TableHead>Contract Start</TableHead>
+          <TableHead>Contract End</TableHead>
+          <TableHead>Occupation Start</TableHead>
+          <TableHead>Occupation End</TableHead>
+          <TableHead>Zones</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredLeases.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={8} className="text-center py-4">No leases found</TableCell>
+          </TableRow>
+        ) : (
+          filteredLeases.map((lease) => {
+            const endDate = new Date(lease.endDate || lease.contractual_end_date);
+            const isActive = endDate > now;
+            
+            // Get zone names
+            const leaseZones = zones.filter(z => lease.zoneIds.includes(z.id));
+            const zoneNames = leaseZones.map(z => z.display_name || z.displayName || z.name).join(', ');
+            
+            return (
+              <TableRow key={lease.id}>
+                <TableCell>{lease.tenant_display_name || lease.tenant}</TableCell>
+                <TableCell>{lease.tenant_industry || '-'}</TableCell>
+                <TableCell>{lease.contractual_start_date || lease.startDate}</TableCell>
+                <TableCell>{lease.contractual_end_date || lease.endDate}</TableCell>
+                <TableCell>{lease.occupation_start_date || lease.startDate}</TableCell>
+                <TableCell>{lease.occupation_end_date || lease.endDate || '-'}</TableCell>
+                <TableCell>
+                  <div className="max-w-[200px] truncate" title={zoneNames}>
+                    {zoneNames || '-'}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </TableCell>
+              </TableRow>
+            );
+          })
+        )}
+      </TableBody>
+    </Table>
+  );
+};
