@@ -1,9 +1,10 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, Server, Cpu, List, CalendarClock, Code, Download, ChevronsDown, PanelRight, X } from "lucide-react";
+import { Building, Server, Cpu, List, CalendarClock, Code, Download, PanelRight, X } from "lucide-react";
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -64,12 +65,26 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
     setDetailsSheetOpen(true);
   };
   
+  // Get selected zone and its sensors
   const selectedZone = selectedZoneId ? zones.find(z => z.id === selectedZoneId) : null;
   const selectedZoneSensors = selectedZoneId ? getSensorsByZone(selectedZoneId) : [];
   
+  // Get leases for selected zone
   const selectedZoneLeases = selectedZoneId 
     ? leases.filter(lease => lease.zoneIds.includes(selectedZoneId))
     : [];
+
+  // Get sensor properties
+  const getSensorProperties = (sensorId: number) => {
+    return properties.filter(p => p.entityType === "sensor" && p.entityId === sensorId);
+  };
+
+  // Get device information for a sensor
+  const getDeviceForSensor = (sensorId: number) => {
+    const sensor = sensors.find(s => s.id === sensorId);
+    if (!sensor) return null;
+    return devices.find(d => d.id === sensor.deviceId);
+  };
 
   const handleDownload = () => {
     console.log(`Downloading ${activeTab} data as Excel`);
@@ -166,6 +181,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
         </Tabs>
       </CardContent>
 
+      {/* Sensors Dialog */}
       <Dialog open={sensorDialogOpen} onOpenChange={setSensorDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
           <DialogHeader>
@@ -228,6 +244,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Zone Details Sheet */}
       <Sheet open={detailsSheetOpen} onOpenChange={setDetailsSheetOpen}>
         <SheetContent className="w-full md:w-1/2 overflow-auto">
           <SheetHeader className="mb-4 flex flex-row justify-between items-start">
@@ -238,7 +255,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               </SheetTitle>
               <p className="text-muted-foreground text-sm">
                 {selectedZone ? 
-                  `Type: ${selectedZone.zone_type || selectedZone.type || 'N/A'} · Usage: ${selectedZone.zone_usage || 'N/A'}` : 
+                  `Type: ${selectedZone.zone_type || selectedZone.type || 'N/A'} · Usage: ${selectedZone.zone_usage || selectedZone.usage || 'N/A'}` : 
                   ''}
               </p>
             </div>
@@ -300,6 +317,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                             </AccordionTrigger>
                             
                             <AccordionContent>
+                              {/* Sensor readings */}
                               {sensor.lastReading && (
                                 <div className="mb-4 bg-muted/30 p-3 rounded-md">
                                   <div className="font-medium">{sensor.lastReading.value} {sensor.unit}</div>
@@ -309,6 +327,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                                 </div>
                               )}
                               
+                              {/* Sensor properties */}
                               <div className="mt-3">
                                 <h5 className="text-xs font-medium mb-2">Properties</h5>
                                 <div className="grid grid-cols-2 gap-2">
@@ -366,6 +385,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                 {selectedZoneLeases.length > 0 ? (
                   <div className="space-y-4">
                     {selectedZoneLeases.map((lease) => {
+                      // Calculate status
                       const now = new Date();
                       const endDate = new Date(lease.endDate || lease.contractual_end_date);
                       const isActive = endDate > now;
@@ -835,7 +855,7 @@ const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => 
           <TableHead>Property Type</TableHead>
           <TableHead>Value</TableHead>
           <TableHead>Unit</TableHead>
-          <TableHead>Source System</TableHead>
+          <TableHead>Source</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -870,7 +890,7 @@ const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => 
                 <TableCell>{property.property_type || property.type || '-'}</TableCell>
                 <TableCell>{property.value || '-'}</TableCell>
                 <TableCell>{property.unit || '-'}</TableCell>
-                <TableCell>{property.system || '-'}</TableCell>
+                <TableCell>{property.source || '-'}</TableCell>
               </TableRow>
             );
           })
