@@ -309,16 +309,16 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="grid gap-6">
-          <MetadataTable selectedAssetId={selectedAssetIds.includes("all") ? "all" : selectedAssetIds.join(",")} />
-        </div>
-        
         <QuickActions 
           zones={filteredZones as Zone[]}
           devices={filteredDevices as Device[]}
           sensors={filteredSensors as Sensor[]}
           leases={filteredLeases as Lease[]}
         />
+        
+        <div className="grid gap-6">
+          <MetadataTable selectedAssetId={selectedAssetIds.includes("all") ? "all" : selectedAssetIds.join(",")} />
+        </div>
       </div>
     </Layout>
   );

@@ -2,7 +2,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronRight, Download, ChevronsDown, Cpu } from "lucide-react";
+import { ChevronRight, Download, ChevronsDown, Cpu, PanelRight } from "lucide-react";
 import { Zone } from "@/lib/models";
 import { getSensorsByZone } from "@/lib/sample-data";
 import { useState } from "react";
@@ -185,10 +185,10 @@ export function ZonesTable({
                   <ContextMenuContent className="w-56">
                     <ContextMenuItem 
                       className="flex items-center gap-2"
-                      onClick={() => handleShowSensors(zone.id)}
+                      onClick={() => onSelectZone(zone.id)}
                     >
-                      <Cpu className="h-4 w-4" />
-                      <span>View Zone Sensors</span>
+                      <PanelRight className="h-4 w-4" />
+                      <span>View relationship</span>
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
@@ -226,7 +226,6 @@ export function ZonesTable({
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Unit</TableHead>
-                    <TableHead>Last Reading</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -237,23 +236,12 @@ export function ZonesTable({
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
-                          sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {sensor.status}
                         </span>
                       </TableCell>
                       <TableCell>{sensor.unit || '-'}</TableCell>
-                      <TableCell>
-                        {sensor.lastReading ? (
-                          <div>
-                            <div>{sensor.lastReading.value} {sensor.unit}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(sensor.lastReading.timestamp).toLocaleString()}
-                            </div>
-                          </div>
-                        ) : '-'}
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

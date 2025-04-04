@@ -5,22 +5,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building, Server, Cpu, List, CalendarClock, Code, Download, PanelRight, X } from "lucide-react";
-import { 
-  Table, TableBody, TableCaption, TableCell, 
-  TableHead, TableHeader, TableRow 
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { assets, zones, devices, sensors, properties, leases, procedures, getSensorsByZone } from "@/lib/sample-data";
 import { Asset, Zone, Device, Sensor, Property, Lease, Procedure } from "@/lib/models";
+
+// Import the refactored table components
+import { AssetsTable } from "./tables/AssetsTable";
+import { ZonesTable } from "./tables/ZonesTable";
+import { ProceduresTable } from "./tables/ProceduresTable";
+import { DevicesTable } from "./tables/DevicesTable";
+import { SensorsTable } from "./tables/SensorsTable";
+import { PropertiesTable } from "./tables/PropertiesTable";
+import { LeasesTable } from "./tables/LeasesTable";
 
 interface MetadataTableProps {
   selectedAssetId?: string;
@@ -34,6 +33,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const [detailsActiveTab, setDetailsActiveTab] = useState("iot");
   
+  // Filter data based on selected asset
   const filteredAssets = selectedAssetId === "all" 
     ? assets 
     : assets.filter(a => a.id === parseInt(selectedAssetId));
@@ -157,25 +157,50 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
             <TabsContent value="zones" className="p-0 m-0">
               <ZonesTable 
                 zones={filteredZones as Zone[]} 
+                assets={assets as Asset[]}
                 statusFilter={statusFilter} 
                 onShowSensors={handleShowSensors}
                 onShowZoneDetails={handleShowZoneDetails}
               />
             </TabsContent>
             <TabsContent value="procedures" className="p-0 m-0">
-              <ProceduresTable procedures={filteredProcedures as Procedure[]} statusFilter={statusFilter} />
+              <ProceduresTable 
+                procedures={filteredProcedures as Procedure[]} 
+                assets={assets as Asset[]}
+                statusFilter={statusFilter} 
+              />
             </TabsContent>
             <TabsContent value="sensors" className="p-0 m-0">
-              <SensorsTable sensors={filteredSensors as Sensor[]} statusFilter={statusFilter} />
+              <SensorsTable 
+                sensors={filteredSensors as Sensor[]} 
+                devices={devices as Device[]}
+                statusFilter={statusFilter} 
+              />
             </TabsContent>
             <TabsContent value="properties" className="p-0 m-0">
-              <PropertiesTable properties={filteredProperties as Property[]} statusFilter={statusFilter} />
+              <PropertiesTable 
+                properties={filteredProperties as Property[]} 
+                assets={assets as Asset[]}
+                zones={zones as Zone[]}
+                devices={devices as Device[]}
+                sensors={sensors as Sensor[]}
+                statusFilter={statusFilter} 
+              />
             </TabsContent>
             <TabsContent value="leases" className="p-0 m-0">
-              <LeasesTable leases={filteredLeases as Lease[]} statusFilter={statusFilter} />
+              <LeasesTable 
+                leases={filteredLeases as Lease[]} 
+                zones={zones as Zone[]}
+                statusFilter={statusFilter} 
+              />
             </TabsContent>
             <TabsContent value="other" className="p-0 m-0">
-              <DevicesTable devices={filteredDevices as Device[]} statusFilter={statusFilter} />
+              <DevicesTable 
+                devices={filteredDevices as Device[]} 
+                zones={zones as Zone[]}
+                assets={assets as Asset[]}
+                statusFilter={statusFilter} 
+              />
             </TabsContent>
           </ScrollArea>
         </Tabs>
@@ -190,51 +215,39 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               Sensors for Zone: {selectedZone ? (selectedZone.display_name || selectedZone.displayName) : ''}
             </DialogTitle>
             <DialogDescription>
-              View all IoT sensors and their latest readings for this zone
+              View all IoT sensors for this zone
             </DialogDescription>
           </DialogHeader>
           
           <div className="mt-4">
             {selectedZoneSensors.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sensor Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Last Reading</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left font-medium p-2">Sensor Name</th>
+                    <th className="text-left font-medium p-2">Type</th>
+                    <th className="text-left font-medium p-2">Status</th>
+                    <th className="text-left font-medium p-2">Unit</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {selectedZoneSensors.map((sensor) => (
-                    <TableRow key={sensor.id}>
-                      <TableCell>{sensor.display_name || sensor.name}</TableCell>
-                      <TableCell>{sensor.type}</TableCell>
-                      <TableCell>
+                    <tr key={sensor.id} className="border-t">
+                      <td className="p-2">{sensor.display_name || sensor.name}</td>
+                      <td className="p-2">{sensor.type}</td>
+                      <td className="p-2">
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
-                          sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {sensor.status}
                         </span>
-                      </TableCell>
-                      <TableCell>{sensor.unit || '-'}</TableCell>
-                      <TableCell>
-                        {sensor.lastReading ? (
-                          <div>
-                            <div>{sensor.lastReading.value} {sensor.unit}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(sensor.lastReading.timestamp).toLocaleString()}
-                            </div>
-                          </div>
-                        ) : '-'}
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                      <td className="p-2">{sensor.unit || '-'}</td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 No sensors found for this zone
@@ -255,7 +268,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               </SheetTitle>
               <p className="text-muted-foreground text-sm">
                 {selectedZone ? 
-                  `Type: ${selectedZone.zone_type || selectedZone.type || 'N/A'} · Usage: ${selectedZone.zone_usage || selectedZone.usage || 'N/A'}` : 
+                  `Type: ${selectedZone.zone_type || selectedZone.type || 'N/A'}` : 
                   ''}
               </p>
             </div>
@@ -308,7 +321,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                                 </div>
                                 <span className={`px-2 py-1 h-fit rounded-full text-xs self-center ${
                                   sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
-                                  sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
                                   'bg-gray-100 text-gray-800'
                                 }`}>
                                   {sensor.status}
@@ -317,16 +329,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                             </AccordionTrigger>
                             
                             <AccordionContent>
-                              {/* Sensor readings */}
-                              {sensor.lastReading && (
-                                <div className="mb-4 bg-muted/30 p-3 rounded-md">
-                                  <div className="font-medium">{sensor.lastReading.value} {sensor.unit}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Last updated: {new Date(sensor.lastReading.timestamp).toLocaleString()}
-                                  </div>
-                                </div>
-                              )}
-                              
                               {/* Sensor properties */}
                               <div className="mt-3">
                                 <h5 className="text-xs font-medium mb-2">Properties</h5>
@@ -346,19 +348,19 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                                         <div className="font-medium">People Count</div>
                                         <div className="text-muted-foreground">Type: people_counting</div>
                                         <div className="text-muted-foreground">Unit: count</div>
-                                        <div className="text-muted-foreground">Value: 12</div>
+                                        <div className="text-muted-foreground">Value: -</div>
                                       </div>
                                       <div className="text-xs border rounded-md p-2">
                                         <div className="font-medium">Active Power</div>
                                         <div className="text-muted-foreground">Type: active_power</div>
                                         <div className="text-muted-foreground">Unit: kW</div>
-                                        <div className="text-muted-foreground">Value: 1.45</div>
+                                        <div className="text-muted-foreground">Value: -</div>
                                       </div>
                                       <div className="text-xs border rounded-md p-2">
                                         <div className="font-medium">Temperature</div>
                                         <div className="text-muted-foreground">Type: temperature</div>
                                         <div className="text-muted-foreground">Unit: °C</div>
-                                        <div className="text-muted-foreground">Value: 22.5</div>
+                                        <div className="text-muted-foreground">Value: -</div>
                                       </div>
                                     </>
                                   )}
@@ -453,520 +455,3 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
     </Card>
   );
 }
-
-interface AssetsTableProps {
-  assets: Asset[];
-  statusFilter: string;
-}
-
-const AssetsTable = ({ assets, statusFilter }: AssetsTableProps) => {
-  const filteredAssets = statusFilter === "all" 
-    ? assets 
-    : assets.filter(asset => 
-        statusFilter === "active" 
-          ? asset.status === "active"
-          : statusFilter === "inactive"
-            ? asset.status === "inactive"
-            : asset.status === "maintenance"
-      );
-  
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Display Name</TableHead>
-          <TableHead>Usage</TableHead>
-          <TableHead>Address</TableHead>
-          <TableHead>City</TableHead>
-          <TableHead>Country</TableHead>
-          <TableHead>Is Active</TableHead>
-          <TableHead>Is CBD</TableHead>
-          <TableHead>External ID</TableHead>
-          <TableHead>Timezone</TableHead>
-          <TableHead>Zones</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredAssets.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={10} className="text-center py-4">No assets found</TableCell>
-          </TableRow>
-        ) : (
-          filteredAssets.map((asset) => (
-            <TableRow key={asset.id}>
-              <TableCell>{asset.display_name || asset.name}</TableCell>
-              <TableCell>{asset.usage || '-'}</TableCell>
-              <TableCell>{asset.address || '-'}</TableCell>
-              <TableCell>{asset.city || '-'}</TableCell>
-              <TableCell>{asset.country || '-'}</TableCell>
-              <TableCell>{asset.is_active !== undefined ? (asset.is_active ? 'Yes' : 'No') : '-'}</TableCell>
-              <TableCell>{asset.is_cbd !== undefined ? (asset.is_cbd ? 'Yes' : 'No') : '-'}</TableCell>
-              <TableCell>{asset.external_id || '-'}</TableCell>
-              <TableCell>{asset.timezone || '-'}</TableCell>
-              <TableCell>{asset.zones.length}</TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
-};
-
-interface ZonesTableProps {
-  zones: Zone[];
-  statusFilter: string;
-  onShowSensors: (zoneId: number) => void;
-  onShowZoneDetails: (zoneId: number) => void;
-}
-
-const ZonesTable = ({ zones, statusFilter, onShowSensors, onShowZoneDetails }: ZonesTableProps) => {
-  const filteredZones = statusFilter === "all" 
-    ? zones 
-    : zones.filter(zone => 
-        zone.type === (statusFilter === "active" ? "office" : 
-                      statusFilter === "inactive" ? "meeting-room" : "common-area")
-      );
-  
-  const totalLettableArea = filteredZones.reduce((sum, zone) => {
-    return sum + (zone.lettable_area || 0);
-  }, 0);
-  
-  const totalCapacity = filteredZones.reduce((sum, zone) => {
-    return sum + (zone.capacity || 0);
-  }, 0);
-  
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-10"></TableHead>
-          <TableHead>Internal Name</TableHead>
-          <TableHead>Display Name</TableHead>
-          <TableHead>Start Date</TableHead>
-          <TableHead>End Date</TableHead>
-          <TableHead>Zone Type</TableHead>
-          <TableHead>Lettable Area</TableHead>
-          <TableHead>Capacity</TableHead>
-          <TableHead>Asset</TableHead>
-          <TableHead>Parent Zones</TableHead>
-          <TableHead>Devices</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredZones.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={11} className="text-center py-4">No zones found</TableCell>
-          </TableRow>
-        ) : (
-          <>
-            {filteredZones.map((zone) => {
-              const parentAsset = assets.find(a => a.id === zone.assetId);
-              const zoneSensors = getSensorsByZone(zone.id).length;
-              
-              return (
-                <ContextMenu key={zone.id}>
-                  <ContextMenuTrigger asChild>
-                    <TableRow className="hover:bg-muted/30 cursor-pointer" onClick={() => onShowZoneDetails(zone.id)}>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="p-0 h-6 w-6 flex items-center justify-center"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onShowZoneDetails(zone.id);
-                          }}
-                        >
-                          <PanelRight className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                      <TableCell>{zone.internal_name || zone.internalName}</TableCell>
-                      <TableCell>{zone.display_name || zone.displayName}</TableCell>
-                      <TableCell>{zone.start_date || zone.startDate}</TableCell>
-                      <TableCell>{zone.end_date || zone.endDate}</TableCell>
-                      <TableCell>{zone.zone_type || zone.type || '-'}</TableCell>
-                      <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
-                      <TableCell>{zone.capacity || '-'}</TableCell>
-                      <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
-                      <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</TableCell>
-                      <TableCell>
-                        {zone.devices.length > 0 ? (
-                          <div className="text-xs">
-                            <span className="font-semibold">{zone.devices.length}</span> device{zone.devices.length !== 1 ? 's' : ''}, {' '}
-                            <span className="font-semibold">{zoneSensors}</span> sensor{zoneSensors !== 1 ? 's' : ''}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">No devices</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className="w-56">
-                    <ContextMenuItem 
-                      className="flex items-center gap-2"
-                      onClick={() => onShowZoneDetails(zone.id)}
-                    >
-                      <PanelRight className="h-4 w-4" />
-                      <span>View Zone Details</span>
-                    </ContextMenuItem>
-                    <ContextMenuItem 
-                      className="flex items-center gap-2"
-                      onClick={() => onShowSensors(zone.id)}
-                    >
-                      <Cpu className="h-4 w-4" />
-                      <span>View Zone Sensors</span>
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              );
-            })}
-            {filteredZones.length > 0 && (
-              <TableRow className="border-t bg-muted/30 font-medium">
-                <TableCell></TableCell>
-                <TableCell colSpan={5} className="text-right py-4">TOTALS:</TableCell>
-                <TableCell>{totalLettableArea > 0 ? `${totalLettableArea} sqm` : '-'}</TableCell>
-                <TableCell>{totalCapacity > 0 ? totalCapacity : '-'}</TableCell>
-                <TableCell colSpan={3}></TableCell>
-              </TableRow>
-            )}
-          </>
-        )}
-      </TableBody>
-    </Table>
-  );
-};
-
-interface ProceduresTableProps {
-  procedures: Procedure[];
-  statusFilter: string;
-}
-
-const ProceduresTable = ({ procedures, statusFilter }: ProceduresTableProps) => {
-  const proceduresData = procedures || [];
-  
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Application Name</TableHead>
-          <TableHead>Input Systems</TableHead>
-          <TableHead>Output System</TableHead>
-          <TableHead>Config</TableHead>
-          <TableHead>Asset</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {proceduresData.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={5} className="text-center py-4">No procedures found</TableCell>
-          </TableRow>
-        ) : (
-          proceduresData.map((procedure) => {
-            const parentAsset = assets.find(a => a.id === procedure.asset);
-            
-            return (
-              <TableRow key={procedure.id}>
-                <TableCell>{procedure.application_name}</TableCell>
-                <TableCell>{Array.isArray(procedure.input_systems) ? procedure.input_systems.join(', ') : '-'}</TableCell>
-                <TableCell>{procedure.output_system}</TableCell>
-                <TableCell>{procedure.config}</TableCell>
-                <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
-              </TableRow>
-            );
-          })
-        )}
-      </TableBody>
-    </Table>
-  );
-};
-
-interface DevicesTableProps {
-  devices: Device[];
-  statusFilter: string;
-}
-
-const DevicesTable = ({ devices, statusFilter }: DevicesTableProps) => {
-  const filteredDevices = statusFilter === "all" 
-    ? devices 
-    : devices.filter(device => 
-        statusFilter === "active" 
-          ? device.status === "online"
-          : statusFilter === "inactive"
-            ? device.status === "offline"
-            : device.status === "error"
-      );
-  
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Internal Name</TableHead>
-          <TableHead>Display Name</TableHead>
-          <TableHead>Start Date</TableHead>
-          <TableHead>End Date</TableHead>
-          <TableHead>Provider</TableHead>
-          <TableHead>Gateway</TableHead>
-          <TableHead>Physical Device ID</TableHead>
-          <TableHead>Asset</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Sensors</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredDevices.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={10} className="text-center py-4">No devices found</TableCell>
-          </TableRow>
-        ) : (
-          filteredDevices.map((device) => {
-            const parentZone = zones.find(z => z.id === device.zoneId);
-            const parentAsset = assets.find(a => a.id === device.asset);
-            
-            return (
-              <TableRow key={device.id}>
-                <TableCell>{device.internal_name || device.name}</TableCell>
-                <TableCell>{device.display_name || device.name}</TableCell>
-                <TableCell>{device.start_date || '-'}</TableCell>
-                <TableCell>{device.end_date || '-'}</TableCell>
-                <TableCell>{device.provider || '-'}</TableCell>
-                <TableCell>{device.gateway || '-'}</TableCell>
-                <TableCell>{device.physical_device_id || '-'}</TableCell>
-                <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    device.status === 'online' ? 'bg-green-100 text-green-800' : 
-                    device.status === 'error' ? 'bg-red-100 text-red-800' : 
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {device.status}
-                  </span>
-                </TableCell>
-                <TableCell>{device.sensors.length}</TableCell>
-              </TableRow>
-            );
-          })
-        )}
-      </TableBody>
-    </Table>
-  );
-};
-
-interface SensorsTableProps {
-  sensors: Sensor[];
-  statusFilter: string;
-}
-
-const SensorsTable = ({ sensors, statusFilter }: SensorsTableProps) => {
-  const filteredSensors = statusFilter === "all" 
-    ? sensors 
-    : sensors.filter(sensor => 
-        statusFilter === "active" 
-          ? sensor.status === "active"
-          : statusFilter === "inactive"
-            ? sensor.status === "inactive"
-            : sensor.status === "error"
-      );
-  
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Internal Name</TableHead>
-          <TableHead>Display Name</TableHead>
-          <TableHead>Start Date</TableHead>
-          <TableHead>End Date</TableHead>
-          <TableHead>External ID</TableHead>
-          <TableHead>Provider</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Unit</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Last Reading</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredSensors.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={10} className="text-center py-4">No sensors found</TableCell>
-          </TableRow>
-        ) : (
-          filteredSensors.map((sensor) => {
-            const device = devices.find(d => d.id === sensor.deviceId);
-            
-            return (
-              <TableRow key={sensor.id}>
-                <TableCell>{sensor.internal_name || sensor.name}</TableCell>
-                <TableCell>{sensor.display_name || sensor.name}</TableCell>
-                <TableCell>{sensor.start_date || '-'}</TableCell>
-                <TableCell>{sensor.end_date || '-'}</TableCell>
-                <TableCell>{sensor.external_id || '-'}</TableCell>
-                <TableCell>{sensor.provider || device?.provider || '-'}</TableCell>
-                <TableCell>{sensor.type || '-'}</TableCell>
-                <TableCell>{sensor.unit || '-'}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
-                    sensor.status === 'error' ? 'bg-red-100 text-red-800' : 
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {sensor.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {sensor.lastReading ? (
-                    <div>
-                      <div>{sensor.lastReading.value} {sensor.unit}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(sensor.lastReading.timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                  ) : '-'}
-                </TableCell>
-              </TableRow>
-            );
-          })
-        )}
-      </TableBody>
-    </Table>
-  );
-};
-
-interface PropertiesTableProps {
-  properties: Property[];
-  statusFilter: string;
-}
-
-const PropertiesTable = ({ properties, statusFilter }: PropertiesTableProps) => {
-  const filteredProperties = statusFilter === "all" 
-    ? properties 
-    : properties.filter(property => 
-        statusFilter === "active" 
-          ? property.entityType === "asset" || property.entityType === "zone"
-          : statusFilter === "inactive"
-            ? property.entityType === "device" 
-            : property.entityType === "sensor"
-      );
-  
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Display Name</TableHead>
-          <TableHead>Entity Type</TableHead>
-          <TableHead>Property Type</TableHead>
-          <TableHead>Value</TableHead>
-          <TableHead>Unit</TableHead>
-          <TableHead>Source</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredProperties.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={6} className="text-center py-4">No properties found</TableCell>
-          </TableRow>
-        ) : (
-          filteredProperties.map((property) => {
-            let entityName = '-';
-            if (property.entityType === 'asset') {
-              const asset = assets.find(a => a.id === property.entityId);
-              entityName = asset ? asset.name : '-';
-            } else if (property.entityType === 'zone') {
-              const zone = zones.find(z => z.id === property.entityId);
-              entityName = zone ? (zone.display_name || zone.displayName) : '-';
-            } else if (property.entityType === 'device') {
-              const device = devices.find(d => d.id === property.entityId);
-              entityName = device ? device.name : '-';
-            } else if (property.entityType === 'sensor') {
-              const sensor = sensors.find(s => s.id === property.entityId);
-              entityName = sensor ? sensor.name : '-';
-            }
-            
-            return (
-              <TableRow key={property.id}>
-                <TableCell>{property.display_name || property.name}</TableCell>
-                <TableCell>
-                  {property.entityType.charAt(0).toUpperCase() + property.entityType.slice(1)}
-                  <div className="text-xs text-muted-foreground">{entityName}</div>
-                </TableCell>
-                <TableCell>{property.property_type || property.type || '-'}</TableCell>
-                <TableCell>{property.value || '-'}</TableCell>
-                <TableCell>{property.unit || '-'}</TableCell>
-                <TableCell>{property.source || '-'}</TableCell>
-              </TableRow>
-            );
-          })
-        )}
-      </TableBody>
-    </Table>
-  );
-};
-
-interface LeasesTableProps {
-  leases: Lease[];
-  statusFilter: string;
-}
-
-const LeasesTable = ({ leases, statusFilter }: LeasesTableProps) => {
-  const now = new Date();
-  const filteredLeases = statusFilter === "all" 
-    ? leases 
-    : leases.filter(lease => {
-        const endDate = new Date(lease.endDate || lease.contractual_end_date);
-        const isActive = endDate > now;
-        return (statusFilter === "active" && isActive) || (statusFilter === "inactive" && !isActive);
-      });
-  
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Tenant</TableHead>
-          <TableHead>Industry</TableHead>
-          <TableHead>Contract Start</TableHead>
-          <TableHead>Contract End</TableHead>
-          <TableHead>Occupation Start</TableHead>
-          <TableHead>Occupation End</TableHead>
-          <TableHead>Zones</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredLeases.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={8} className="text-center py-4">No leases found</TableCell>
-          </TableRow>
-        ) : (
-          filteredLeases.map((lease) => {
-            const endDate = new Date(lease.endDate || lease.contractual_end_date);
-            const isActive = endDate > now;
-            
-            const leaseZones = zones.filter(z => lease.zoneIds.includes(z.id));
-            const zoneNames = leaseZones.map(z => z.display_name || z.displayName || z.internal_name || z.internalName).join(', ');
-            
-            return (
-              <TableRow key={lease.id}>
-                <TableCell>{lease.tenant_display_name || lease.tenant}</TableCell>
-                <TableCell>{lease.tenant_industry || '-'}</TableCell>
-                <TableCell>{lease.contractual_start_date || lease.startDate}</TableCell>
-                <TableCell>{lease.contractual_end_date || lease.endDate}</TableCell>
-                <TableCell>{lease.occupation_start_date || lease.startDate}</TableCell>
-                <TableCell>{lease.endDate || '-'}</TableCell>
-                <TableCell>
-                  <div className="max-w-[200px] truncate" title={zoneNames}>
-                    {zoneNames || '-'}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </TableCell>
-              </TableRow>
-            );
-          })
-        )}
-      </TableBody>
-    </Table>
-  );
-};
