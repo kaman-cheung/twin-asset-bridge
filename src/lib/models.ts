@@ -100,7 +100,6 @@ export interface Property {
   is_cumulative: boolean;
   direction: string;
   sensor: number; // Reference to sensor
-  source_system?: string; // Added this property to match usage in PropertiesTable.tsx
 }
 
 export interface Lease {
