@@ -1,7 +1,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PanelRight, Cpu, ChevronDown } from "lucide-react";
+import { PanelRight, Cpu, ChevronDown, Building } from "lucide-react";
 import { Zone, Asset } from "@/lib/models";
 import { getSensorsByZone } from "@/lib/sample-data";
 import {
@@ -15,7 +15,6 @@ interface ZonesTableProps {
   zones: Zone[];
   assets: Asset[];
   statusFilter: string;
-  onShowSensors: (zoneId: number) => void;
   onShowZoneDetails: (zoneId: number) => void;
 }
 
@@ -23,7 +22,6 @@ export function ZonesTable({
   zones, 
   assets, 
   statusFilter, 
-  onShowSensors, 
   onShowZoneDetails 
 }: ZonesTableProps) {
   const filteredZones = statusFilter === "all" 
@@ -97,19 +95,6 @@ export function ZonesTable({
                           >
                             <PanelRight className="h-4 w-4" />
                           </Button>
-                          {(zoneSensors > 0 || hasChildZones) && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="p-0 h-6 w-6 flex items-center justify-center"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onShowSensors(zone.id);
-                              }}
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
                       </TableCell>
                       <TableCell>{zone.internal_name || zone.internalName}</TableCell>
@@ -145,18 +130,9 @@ export function ZonesTable({
                       className="flex items-center gap-2"
                       onClick={() => onShowZoneDetails(zone.id)}
                     >
-                      <PanelRight className="h-4 w-4" />
-                      <span>View relationship</span>
+                      <Building className="h-4 w-4" />
+                      <span>View zone details</span>
                     </ContextMenuItem>
-                    {(zoneSensors > 0 || hasChildZones) && (
-                      <ContextMenuItem 
-                        className="flex items-center gap-2"
-                        onClick={() => onShowSensors(zone.id)}
-                      >
-                        <Cpu className="h-4 w-4" />
-                        <span>View {hasChildZones ? "hierarchy" : "sensors"}</span>
-                      </ContextMenuItem>
-                    )}
                   </ContextMenuContent>
                 </ContextMenu>
               );

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -27,7 +28,6 @@ interface MetadataTableProps {
 export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<string>("assets");
-  const [sensorDialogOpen, setSensorDialogOpen] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const [detailsActiveTab, setDetailsActiveTab] = useState("iot");
@@ -55,11 +55,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
     l.zoneIds.some(zId => zoneIds.includes(zId))
   );
 
-  const handleShowSensors = (zoneId: number) => {
-    setSelectedZoneId(zoneId);
-    setSensorDialogOpen(true);
-  };
-
+  // Combined function to show zone details - fix for the context menu issue
   const handleShowZoneDetails = (zoneId: number) => {
     setSelectedZoneId(zoneId);
     setDetailsSheetOpen(true);
@@ -72,9 +68,10 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   // Get child zones for the selected zone
   const getChildZones = (parentId: number) => {
     return zones.filter(z => {
+      // Check both parent_zones array and parentZoneId (if they exist)
       const hasParentZones = z.parent_zones && z.parent_zones.includes(parentId);
-      const hasParentZoneId = z.parentZoneId !== undefined && z.parentZoneId === parentId;
-      return hasParentZones || hasParentZoneId;
+      const hasLegacyParentZone = z.parentZoneId === parentId;
+      return hasParentZones || hasLegacyParentZone;
     });
   };
   
@@ -180,7 +177,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                 zones={filteredZones as Zone[]} 
                 assets={assets as Asset[]}
                 statusFilter={statusFilter} 
-                onShowSensors={handleShowSensors}
                 onShowZoneDetails={handleShowZoneDetails}
               />
             </TabsContent>
@@ -227,114 +223,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
         </Tabs>
       </CardContent>
 
-      {/* Sensors Dialog */}
-      <Dialog open={sensorDialogOpen} onOpenChange={setSensorDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {selectedZone?.zone_type === "building" || selectedZone?.type === "building" ? (
-                <Building className="h-5 w-5 text-blue-500" />
-              ) : (
-                <Cpu className="h-5 w-5 text-purple-500" />
-              )}
-              {selectedZone?.zone_type === "building" || selectedZone?.type === "building" ? 
-                "Building Details" : (
-                selectedZone?.zone_type === "floor" || selectedZone?.type === "floor" ?
-                "Floor Details" : "Space Details"
-              )}: {selectedZone ? (selectedZone.display_name || selectedZone.displayName) : ''}
-            </DialogTitle>
-            <DialogDescription>
-              {childZones.length > 0 ? 
-                `View child zones and sensors for this ${selectedZone?.zone_type || selectedZone?.type || 'zone'}` :
-                `View all IoT sensors for this ${selectedZone?.zone_type || selectedZone?.type || 'zone'}`}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="mt-4">
-            {/* Show hierarchy if there are child zones */}
-            {childZones.length > 0 && (
-              <div className="mb-6 border rounded-md p-4">
-                <h3 className="text-sm font-medium mb-2">Child Zones</h3>
-                <div className="space-y-3">
-                  {childZones.map(childZone => {
-                    const childSensors = getSensorsByZone(childZone.id).length;
-                    const grandchildZones = getChildZones(childZone.id);
-                    
-                    return (
-                      <div key={childZone.id} className="pl-4 border-l-2 border-muted">
-                        <div className="flex items-center justify-between py-1">
-                          <div>
-                            <div className="font-medium">{childZone.display_name || childZone.displayName}</div>
-                            <div className="text-xs text-muted-foreground">
-                              Type: {childZone.zone_type || childZone.type || 'N/A'} • 
-                              {childZone.devices.length > 0 ? `${childZone.devices.length} devices, ${childSensors} sensors` : 'No devices'}
-                              {grandchildZones.length > 0 ? ` • ${grandchildZones.length} child zones` : ''}
-                            </div>
-                          </div>
-                          {(childSensors > 0 || grandchildZones.length > 0) && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => {
-                                setSensorDialogOpen(false);
-                                setTimeout(() => {
-                                  setSelectedZoneId(childZone.id);
-                                  setSensorDialogOpen(true);
-                                }, 100);
-                              }}
-                            >
-                              View Details
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            
-            {/* Show sensors for this zone */}
-            <h3 className="text-sm font-medium mb-2">Sensors in this {selectedZone?.zone_type || selectedZone?.type || 'zone'}</h3>
-            {selectedZoneSensors.length > 0 ? (
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="text-left font-medium p-2">Sensor Name</th>
-                    <th className="text-left font-medium p-2">Type</th>
-                    <th className="text-left font-medium p-2">Status</th>
-                    <th className="text-left font-medium p-2">Unit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedZoneSensors.map((sensor) => (
-                    <tr key={sensor.id} className="border-t">
-                      <td className="p-2">{sensor.display_name || sensor.name}</td>
-                      <td className="p-2">{sensor.type}</td>
-                      <td className="p-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {sensor.status}
-                        </span>
-                      </td>
-                      <td className="p-2">{sensor.unit || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                No sensors found directly in this {selectedZone?.zone_type || selectedZone?.type || 'zone'}
-                {childZones.length > 0 && " (check child zones)"}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Zone Details Sheet */}
+      {/* Zone Details Sheet - Combined view for sensors and relationships */}
       <Sheet open={detailsSheetOpen} onOpenChange={setDetailsSheetOpen}>
         <SheetContent className="w-full md:w-1/2 overflow-auto">
           <SheetHeader className="mb-4 flex flex-row justify-between items-start">
@@ -361,7 +250,11 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
           </SheetHeader>
 
           <Tabs defaultValue="iot" className="w-full mt-6" onValueChange={setDetailsActiveTab}>
-            <TabsList className="grid grid-cols-2 mb-4">
+            <TabsList className="grid grid-cols-3 mb-4">
+              <TabsTrigger value="hierarchy" className="flex items-center gap-2">
+                <Building className="w-4 h-4" />
+                <span>Hierarchy</span>
+              </TabsTrigger>
               <TabsTrigger value="iot" className="flex items-center gap-2">
                 <Cpu className="w-4 h-4" />
                 <span>IoT</span>
@@ -372,6 +265,57 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               </TabsTrigger>
             </TabsList>
             
+            {/* Hierarchy Tab - Shows zone relationships */}
+            <TabsContent value="hierarchy" className="p-0 m-0">
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Zone Relationship</h3>
+                <div className="border rounded-md p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Parent Asset</div>
+                        <div className="text-sm text-muted-foreground">
+                          {selectedZone && selectedZone.assetId ? 
+                            assets.find(a => a.id === selectedZone.assetId)?.name || 'Unknown Asset' : 
+                            'Not assigned to an asset'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {selectedZone?.parent_zones && selectedZone.parent_zones.length > 0 && (
+                      <div className="mt-4">
+                        <div className="font-medium mb-2">Parent Zones</div>
+                        <div className="space-y-2 pl-4 border-l-2 border-muted">
+                          {selectedZone.parent_zones.map(parentId => {
+                            const parentZone = zones.find(z => z.id === parentId);
+                            return parentZone ? (
+                              <div key={parentId} className="text-sm">
+                                {parentZone.display_name || parentZone.displayName} ({parentZone.zone_type || parentZone.type})
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {childZones.length > 0 && (
+                      <div className="mt-4">
+                        <div className="font-medium mb-2">Child Zones</div>
+                        <div className="space-y-2 pl-4 border-l-2 border-muted">
+                          {childZones.map(childZone => (
+                            <div key={childZone.id} className="text-sm">
+                              {childZone.display_name || childZone.displayName} ({childZone.zone_type || childZone.type})
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            {/* IoT Tab - Shows sensors */}
             <TabsContent value="iot" className="p-0 m-0">
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Sensors ({selectedZoneSensors.length})</h3>
@@ -452,6 +396,50 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground border rounded-md">
                     No sensors found for this zone
+                    {childZones.length > 0 && " (check child zones)"}
+                  </div>
+                )}
+                
+                {/* Child zones with sensors info */}
+                {childZones.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium mb-2">Child Zones</h3>
+                    <div className="space-y-3">
+                      {childZones.map(childZone => {
+                        const childSensors = getSensorsByZone(childZone.id).length;
+                        const grandchildZones = getChildZones(childZone.id);
+                        
+                        return (
+                          <div key={childZone.id} className="pl-4 border-l-2 border-muted">
+                            <div className="flex items-center justify-between py-1">
+                              <div>
+                                <div className="font-medium">{childZone.display_name || childZone.displayName}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  Type: {childZone.zone_type || childZone.type || 'N/A'} • 
+                                  {childZone.devices.length > 0 ? `${childZone.devices.length} devices, ${childSensors} sensors` : 'No devices'}
+                                  {grandchildZones.length > 0 ? ` • ${grandchildZones.length} child zones` : ''}
+                                </div>
+                              </div>
+                              {(childSensors > 0 || grandchildZones.length > 0) && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setDetailsSheetOpen(false);
+                                    setTimeout(() => {
+                                      setSelectedZoneId(childZone.id);
+                                      setDetailsSheetOpen(true);
+                                    }, 100);
+                                  }}
+                                >
+                                  View Details
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
