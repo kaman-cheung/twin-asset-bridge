@@ -66,8 +66,8 @@ export function ZonesTable({
   // Get child zones for the selected zone
   const getChildZones = (parentId: number) => {
     return allZones.filter(z => 
-      (z.parentZoneId === parentId) || 
-      (z.parent_zones && z.parent_zones.includes(parentId))
+      (z.parent_zones && z.parent_zones.includes(parentId)) ||
+      (z.parentZoneId === parentId) // Keep checking both for backward compatibility
     );
   };
   

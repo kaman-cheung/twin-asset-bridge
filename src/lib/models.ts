@@ -1,3 +1,4 @@
+
 // Define types for our digital twin system
 export interface Asset {
   id: number;
@@ -31,7 +32,7 @@ export interface Zone {
   capacity?: number;
   assetId?: number; // Reference to parent asset
   asset?: number; // Alternative reference to parent asset
-  parentZoneId?: number; // Reference to parent zone
+  parentZoneId?: number; // Reference to parent zone (legacy field)
   parent_zones?: number[]; // References to parent zones
   childZones?: number[]; // References to child zones
   devices: number[]; // References to device IDs

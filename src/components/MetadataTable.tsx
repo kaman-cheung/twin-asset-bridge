@@ -72,8 +72,8 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   // Get child zones for the selected zone
   const getChildZones = (parentId: number) => {
     return zones.filter(z => 
-      (z.parentZoneId === parentId) || 
-      (z.parent_zones && z.parent_zones.includes(parentId))
+      (z.parent_zones && z.parent_zones.includes(parentId)) ||
+      (z.parentZoneId === parentId) // Keep checking both for backward compatibility
     );
   };
   
@@ -395,7 +395,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                                     ID: {sensor.external_id || sensor.id}
                                   </div>
                                 </div>
-                                <span className={`px-2 py-1 h-fit rounded-full text-xs self-center ${
+                                <span className={`px-2 py-1 rounded-full text-xs self-center ${
                                   sensor.status === 'active' ? 'bg-green-100 text-green-800' : 
                                   'bg-gray-100 text-gray-800'
                                 }`}>
