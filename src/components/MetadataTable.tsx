@@ -73,7 +73,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const getChildZones = (parentId: number) => {
     return zones.filter(z => 
       (z.parent_zones && z.parent_zones.includes(parentId)) ||
-      (z.parentZoneId === parentId) // Keep checking both for backward compatibility
+      (z.parentZoneId === parentId)
     );
   };
   

@@ -20,12 +20,12 @@ export interface Asset {
 
 export interface Zone {
   id: number;
-  displayName: string;
-  internalName: string;
-  internal_name: string;
-  display_name: string;
-  start_date: string;
-  end_date: string;
+  displayName?: string;
+  internalName?: string;
+  internal_name?: string;
+  display_name?: string;
+  start_date?: string;
+  end_date?: string;
   type?: "building" | "floor" | "space" | string;
   zone_type?: "building" | "floor" | "space" | string;
   lettable_area?: number;
