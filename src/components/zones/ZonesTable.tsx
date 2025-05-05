@@ -65,10 +65,11 @@ export function ZonesTable({
 
   // Get child zones for the selected zone
   const getChildZones = (parentId: number) => {
-    return allZones.filter(z => 
-      (z.parent_zones && z.parent_zones.includes(parentId)) ||
-      (z.parentZoneId === parentId)
-    );
+    return allZones.filter(z => {
+      const hasParentZones = z.parent_zones && z.parent_zones.includes(parentId);
+      const hasParentZoneId = z.parentZoneId !== undefined && z.parentZoneId === parentId;
+      return hasParentZones || hasParentZoneId;
+    });
   };
   
   const childZones = selectedZoneId ? getChildZones(selectedZoneId) : [];

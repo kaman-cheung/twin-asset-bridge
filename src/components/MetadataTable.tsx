@@ -71,10 +71,11 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   
   // Get child zones for the selected zone
   const getChildZones = (parentId: number) => {
-    return zones.filter(z => 
-      (z.parent_zones && z.parent_zones.includes(parentId)) ||
-      (z.parentZoneId === parentId)
-    );
+    return zones.filter(z => {
+      const hasParentZones = z.parent_zones && z.parent_zones.includes(parentId);
+      const hasParentZoneId = z.parentZoneId !== undefined && z.parentZoneId === parentId;
+      return hasParentZones || hasParentZoneId;
+    });
   };
   
   const childZones = selectedZoneId ? getChildZones(selectedZoneId) : [];
