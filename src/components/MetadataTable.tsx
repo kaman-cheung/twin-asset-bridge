@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,12 +25,13 @@ interface MetadataTableProps {
 }
 
 export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
-  const [statusFilter, setStatusFilter] = useState<string>("active");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<string>("assets");
   const [sensorDialogOpen, setSensorDialogOpen] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
   const [detailsActiveTab, setDetailsActiveTab] = useState("iot");
+  const [expandedZones, setExpandedZones] = useState<number[]>([]);
   
   // Filter data based on selected asset
   const filteredAssets = selectedAssetId === "all" 
@@ -69,6 +69,16 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const selectedZone = selectedZoneId ? zones.find(z => z.id === selectedZoneId) : null;
   const selectedZoneSensors = selectedZoneId ? getSensorsByZone(selectedZoneId) : [];
   
+  // Get child zones for the selected zone
+  const getChildZones = (parentId: number) => {
+    return zones.filter(z => 
+      (z.parentZoneId === parentId) || 
+      (z.parent_zones && z.parent_zones.includes(parentId))
+    );
+  };
+  
+  const childZones = selectedZoneId ? getChildZones(selectedZoneId) : [];
+  
   // Get leases for selected zone
   const selectedZoneLeases = selectedZoneId 
     ? leases.filter(lease => lease.zoneIds.includes(selectedZoneId))
@@ -96,15 +106,25 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Metadata</CardTitle>
         <div className="flex space-x-2">
-          <Select onValueChange={setStatusFilter} defaultValue="active">
+          <Select onValueChange={setStatusFilter} defaultValue={activeTab === "zones" ? "all" : "active"}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="archive">Archived</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
+              {activeTab === "zones" ? (
+                <>
+                  <SelectItem value="building">Buildings</SelectItem>
+                  <SelectItem value="floor">Floors</SelectItem>
+                  <SelectItem value="space">Spaces</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="archive">Archived</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
           <Button 
@@ -211,15 +231,70 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Cpu className="h-5 w-5 text-purple-500" />
-              Sensors for Zone: {selectedZone ? (selectedZone.display_name || selectedZone.displayName) : ''}
+              {selectedZone?.zone_type === "building" || selectedZone?.type === "building" ? (
+                <Building className="h-5 w-5 text-blue-500" />
+              ) : (
+                <Cpu className="h-5 w-5 text-purple-500" />
+              )}
+              {selectedZone?.zone_type === "building" || selectedZone?.type === "building" ? 
+                "Building Details" : (
+                selectedZone?.zone_type === "floor" || selectedZone?.type === "floor" ?
+                "Floor Details" : "Space Details"
+              )}: {selectedZone ? (selectedZone.display_name || selectedZone.displayName) : ''}
             </DialogTitle>
             <DialogDescription>
-              View all IoT sensors for this zone
+              {childZones.length > 0 ? 
+                `View child zones and sensors for this ${selectedZone?.zone_type || selectedZone?.type || 'zone'}` :
+                `View all IoT sensors for this ${selectedZone?.zone_type || selectedZone?.type || 'zone'}`}
             </DialogDescription>
           </DialogHeader>
           
           <div className="mt-4">
+            {/* Show hierarchy if there are child zones */}
+            {childZones.length > 0 && (
+              <div className="mb-6 border rounded-md p-4">
+                <h3 className="text-sm font-medium mb-2">Child Zones</h3>
+                <div className="space-y-3">
+                  {childZones.map(childZone => {
+                    const childSensors = getSensorsByZone(childZone.id).length;
+                    const grandchildZones = getChildZones(childZone.id);
+                    
+                    return (
+                      <div key={childZone.id} className="pl-4 border-l-2 border-muted">
+                        <div className="flex items-center justify-between py-1">
+                          <div>
+                            <div className="font-medium">{childZone.display_name || childZone.displayName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Type: {childZone.zone_type || childZone.type || 'N/A'} • 
+                              {childZone.devices.length > 0 ? `${childZone.devices.length} devices, ${childSensors} sensors` : 'No devices'}
+                              {grandchildZones.length > 0 ? ` • ${grandchildZones.length} child zones` : ''}
+                            </div>
+                          </div>
+                          {(childSensors > 0 || grandchildZones.length > 0) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                setSensorDialogOpen(false);
+                                setTimeout(() => {
+                                  setSelectedZoneId(childZone.id);
+                                  setSensorDialogOpen(true);
+                                }, 100);
+                              }}
+                            >
+                              View Details
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Show sensors for this zone */}
+            <h3 className="text-sm font-medium mb-2">Sensors in this {selectedZone?.zone_type || selectedZone?.type || 'zone'}</h3>
             {selectedZoneSensors.length > 0 ? (
               <table className="w-full">
                 <thead>
@@ -250,7 +325,8 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               </table>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                No sensors found for this zone
+                No sensors found directly in this {selectedZone?.zone_type || selectedZone?.type || 'zone'}
+                {childZones.length > 0 && " (check child zones)"}
               </div>
             )}
           </div>

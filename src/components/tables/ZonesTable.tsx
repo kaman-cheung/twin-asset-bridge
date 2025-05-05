@@ -1,7 +1,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PanelRight, Cpu } from "lucide-react";
+import { PanelRight, Cpu, ChevronDown } from "lucide-react";
 import { Zone, Asset } from "@/lib/models";
 import { getSensorsByZone } from "@/lib/sample-data";
 import {
@@ -29,8 +29,7 @@ export function ZonesTable({
   const filteredZones = statusFilter === "all" 
     ? zones 
     : zones.filter(zone => 
-        zone.type === (statusFilter === "active" ? "office" : 
-                      statusFilter === "inactive" ? "meeting-room" : "common-area")
+        (zone.type === statusFilter || zone.zone_type === statusFilter)
       );
   
   const totalLettableArea = filteredZones.reduce((sum, zone) => {
@@ -40,6 +39,17 @@ export function ZonesTable({
   const totalCapacity = filteredZones.reduce((sum, zone) => {
     return sum + (zone.capacity || 0);
   }, 0);
+
+  // Function to get zone type display text
+  const getZoneTypeDisplay = (zone: Zone): string => {
+    const zoneType = zone.zone_type || zone.type || '';
+    switch (zoneType.toLowerCase()) {
+      case 'building': return 'Building';
+      case 'floor': return 'Floor';
+      case 'space': return 'Space';
+      default: return zoneType || '-';
+    }
+  };
   
   return (
     <Table>
@@ -68,29 +78,45 @@ export function ZonesTable({
             {filteredZones.map((zone) => {
               const parentAsset = assets.find(a => a.id === zone.assetId);
               const zoneSensors = getSensorsByZone(zone.id).length;
+              const hasChildZones = zone.childZones && zone.childZones.length > 0;
               
               return (
                 <ContextMenu key={zone.id}>
                   <ContextMenuTrigger asChild>
                     <TableRow className="hover:bg-muted/30 cursor-pointer" onClick={() => onShowZoneDetails(zone.id)}>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="p-0 h-6 w-6 flex items-center justify-center"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onShowZoneDetails(zone.id);
-                          }}
-                        >
-                          <PanelRight className="h-4 w-4" />
-                        </Button>
+                        <div className="flex space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="p-0 h-6 w-6 flex items-center justify-center"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onShowZoneDetails(zone.id);
+                            }}
+                          >
+                            <PanelRight className="h-4 w-4" />
+                          </Button>
+                          {(zoneSensors > 0 || hasChildZones) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="p-0 h-6 w-6 flex items-center justify-center"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onShowSensors(zone.id);
+                              }}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{zone.internal_name || zone.internalName}</TableCell>
                       <TableCell>{zone.display_name || zone.displayName}</TableCell>
                       <TableCell>{zone.start_date || zone.startDate}</TableCell>
                       <TableCell>{zone.end_date || zone.endDate}</TableCell>
-                      <TableCell>{zone.zone_type || zone.type || '-'}</TableCell>
+                      <TableCell>{getZoneTypeDisplay(zone)}</TableCell>
                       <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
                       <TableCell>{zone.capacity || '-'}</TableCell>
                       <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
@@ -100,7 +126,14 @@ export function ZonesTable({
                           <div className="text-xs">
                             <span className="font-semibold">{zone.devices.length}</span> device{zone.devices.length !== 1 ? 's' : ''}, {' '}
                             <span className="font-semibold">{zoneSensors}</span> sensor{zoneSensors !== 1 ? 's' : ''}
+                            {hasChildZones && (
+                              <span className="ml-1 text-muted-foreground">
+                                (+ child zones)
+                              </span>
+                            )}
                           </div>
+                        ) : hasChildZones ? (
+                          <span className="text-xs">Has child zones</span>
                         ) : (
                           <span className="text-xs text-muted-foreground">No devices</span>
                         )}
@@ -115,6 +148,15 @@ export function ZonesTable({
                       <PanelRight className="h-4 w-4" />
                       <span>View relationship</span>
                     </ContextMenuItem>
+                    {(zoneSensors > 0 || hasChildZones) && (
+                      <ContextMenuItem 
+                        className="flex items-center gap-2"
+                        onClick={() => onShowSensors(zone.id)}
+                      >
+                        <Cpu className="h-4 w-4" />
+                        <span>View {hasChildZones ? "hierarchy" : "sensors"}</span>
+                      </ContextMenuItem>
+                    )}
                   </ContextMenuContent>
                 </ContextMenu>
               );

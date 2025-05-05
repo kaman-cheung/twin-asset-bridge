@@ -1,4 +1,3 @@
-
 // Define types for our digital twin system
 export interface Asset {
   id: number;
@@ -26,8 +25,8 @@ export interface Zone {
   display_name: string;
   start_date: string;
   end_date: string;
-  type?: string;
-  zone_type?: string;
+  type?: "building" | "floor" | "space" | string;
+  zone_type?: "building" | "floor" | "space" | string;
   lettable_area?: number;
   capacity?: number;
   assetId?: number; // Reference to parent asset
@@ -40,6 +39,8 @@ export interface Zone {
   endDate?: string; // Legacy field
   usage?: string; // Added usage property
   zone_usage?: string; // Added zone_usage property
+  level?: number; // Added level property for hierarchy depth
+  has_sensors?: boolean; // Added to indicate if zone has sensors directly
 }
 
 export interface Device {
