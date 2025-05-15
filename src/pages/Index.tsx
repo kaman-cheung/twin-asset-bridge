@@ -8,6 +8,7 @@ import { useState } from "react";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { QuickActions } from "@/components/QuickActions";
 import { Asset, Device, Lease, Sensor, Zone } from "@/lib/models";
+import { filterBySelectedAssetIds, getFilteredEntities } from "@/lib/utils";
 
 const SubcategoryItem = ({ label, count }: { label: string; count: number }) => (
   <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -43,25 +44,24 @@ const Index = () => {
     }
   };
   
-  const filteredAssets = selectedAssetIds.includes("all") 
-    ? (assets || [])
-    : (assets || []).filter(a => selectedAssetIds.includes(a.id.toString()));
-  
-  const assetIds = filteredAssets.map(a => a.id);
-  const filteredZones = (zones || []).filter(z => assetIds.includes(z.assetId));
-  const zoneIds = filteredZones.map(z => z.id);
-  const filteredDevices = (devices || []).filter(d => zoneIds.includes(d.zoneId));
-  const deviceIds = filteredDevices.map(d => d.id);
-  const filteredSensors = (sensors || []).filter(s => deviceIds.includes(s.deviceId));
-  const filteredProcedures = (procedures || []).filter(p => assetIds.includes(p.asset));
-  const filteredProperties = (properties || []).filter(p => 
-    (p.entityType === "asset" && assetIds.includes(p.entityId)) ||
-    (p.entityType === "zone" && zoneIds.includes(p.entityId)) ||
-    (p.entityType === "device" && deviceIds.includes(p.entityId)) ||
-    (p.entityType === "sensor" && filteredSensors.map(s => s.id).includes(p.entityId))
-  );
-  const filteredLeases = (leases || []).filter(l => 
-    l.zoneIds.some(zId => zoneIds.includes(zId))
+  // Use the helper function to get all filtered entities
+  const {
+    assets: filteredAssets,
+    zones: filteredZones,
+    devices: filteredDevices,
+    sensors: filteredSensors,
+    properties: filteredProperties,
+    leases: filteredLeases,
+    procedures: filteredProcedures
+  } = getFilteredEntities(
+    selectedAssetIds, 
+    assets, 
+    zones, 
+    devices, 
+    sensors, 
+    properties, 
+    leases, 
+    procedures
   );
   
   const assetCount = {

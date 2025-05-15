@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -6,11 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building, Server, Cpu, List, CalendarClock, Code, Download, PanelRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { assets, zones, devices, sensors, properties, leases, procedures, getSensorsByZone } from "@/lib/sample-data";
 import { Asset, Zone, Device, Sensor, Property, Lease, Procedure } from "@/lib/models";
+import { getFilteredEntities, getChildZones } from "@/lib/utils";
 
 // Import the refactored table components
 import { AssetsTable } from "./tables/AssetsTable";
@@ -33,26 +33,29 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const [detailsActiveTab, setDetailsActiveTab] = useState("iot");
   const [expandedZones, setExpandedZones] = useState<number[]>([]);
   
-  // Filter data based on selected asset
-  const filteredAssets = selectedAssetId === "all" 
-    ? assets 
-    : assets.filter(a => a.id === parseInt(selectedAssetId));
+  // Parse selected asset IDs from the prop
+  const selectedAssetIds = selectedAssetId === "all" 
+    ? ["all"] 
+    : selectedAssetId.split(",");
   
-  const assetIds = filteredAssets.map(a => a.id);
-  const filteredZones = zones.filter(z => assetIds.includes(z.assetId));
-  const zoneIds = filteredZones.map(z => z.id);
-  const filteredDevices = devices.filter(d => zoneIds.includes(d.zoneId));
-  const deviceIds = filteredDevices.map(d => d.id);
-  const filteredSensors = sensors.filter(s => deviceIds.includes(s.deviceId));
-  const filteredProcedures = procedures.filter(p => assetIds.includes(p.asset));
-  const filteredProperties = properties.filter(p => 
-    (p.entityType === "asset" && assetIds.includes(p.entityId)) ||
-    (p.entityType === "zone" && zoneIds.includes(p.entityId)) ||
-    (p.entityType === "device" && deviceIds.includes(p.entityId)) ||
-    (p.entityType === "sensor" && filteredSensors.map(s => s.id).includes(p.entityId))
-  );
-  const filteredLeases = leases.filter(l => 
-    l.zoneIds.some(zId => zoneIds.includes(zId))
+  // Get filtered entities based on selected asset IDs
+  const {
+    assets: filteredAssets,
+    zones: filteredZones,
+    devices: filteredDevices,
+    sensors: filteredSensors,
+    properties: filteredProperties,
+    leases: filteredLeases,
+    procedures: filteredProcedures
+  } = getFilteredEntities(
+    selectedAssetIds,
+    assets,
+    zones, 
+    devices, 
+    sensors, 
+    properties, 
+    leases, 
+    procedures
   );
 
   // Combined function to show zone details - fix for the context menu issue
@@ -66,16 +69,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
   const selectedZoneSensors = selectedZoneId ? getSensorsByZone(selectedZoneId) : [];
   
   // Get child zones for the selected zone
-  const getChildZones = (parentId: number) => {
-    return zones.filter(z => {
-      // Check both parent_zones array and parentZoneId (if they exist)
-      const hasParentZones = z.parent_zones && z.parent_zones.includes(parentId);
-      const hasLegacyParentZone = z.parentZoneId === parentId;
-      return hasParentZones || hasLegacyParentZone;
-    });
-  };
-  
-  const childZones = selectedZoneId ? getChildZones(selectedZoneId) : [];
+  const childZones = selectedZoneId ? getChildZones(zones, selectedZoneId) : [];
   
   // Get leases for selected zone
   const selectedZoneLeases = selectedZoneId 
@@ -407,7 +401,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                     <div className="space-y-3">
                       {childZones.map(childZone => {
                         const childSensors = getSensorsByZone(childZone.id).length;
-                        const grandchildZones = getChildZones(childZone.id);
+                        const grandchildZones = getChildZones(zones, childZone.id);
                         
                         return (
                           <div key={childZone.id} className="pl-4 border-l-2 border-muted">

@@ -82,7 +82,7 @@ export function AssetsTable({
                 <td className="p-2">{asset.is_cbd !== undefined ? (asset.is_cbd ? 'Yes' : 'No') : '-'}</td>
                 <td className="p-2">{asset.external_id || '-'}</td>
                 <td className="p-2">{asset.timezone || '-'}</td>
-                <td className="p-2">{asset.zones.length}</td>
+                <td className="p-2">{asset.zones?.length || 0}</td>
                 <td className="p-2">
                   <Button 
                     variant="ghost" 
