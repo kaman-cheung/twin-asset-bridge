@@ -1,9 +1,10 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building, Server, Cpu, List, CalendarClock, Code, Download, PanelRight, X } from "lucide-react";
+import { Building, Server, Cpu, List, CalendarClock, Code, Download, PanelRight, X, Network, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -98,25 +99,15 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Metadata</CardTitle>
         <div className="flex space-x-2">
-          <Select onValueChange={setStatusFilter} defaultValue={activeTab === "zones" ? "all" : "active"}>
+          <Select onValueChange={setStatusFilter} defaultValue="all">
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              {activeTab === "zones" ? (
-                <>
-                  <SelectItem value="building">Buildings</SelectItem>
-                  <SelectItem value="floor">Floors</SelectItem>
-                  <SelectItem value="space">Spaces</SelectItem>
-                </>
-              ) : (
-                <>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="archive">Archived</SelectItem>
-                </>
-              )}
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="archive">Archived</SelectItem>
             </SelectContent>
           </Select>
           <Button 
@@ -132,18 +123,26 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="assets" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-7 mb-4">
+          <TabsList className="grid w-full grid-cols-9 mb-4">
             <TabsTrigger value="assets" className="flex items-center gap-2">
               <Building className="w-4 h-4" />
               <span className="hidden sm:inline">Assets</span>
+            </TabsTrigger>
+            <TabsTrigger value="procedures" className="flex items-center gap-2">
+              <Code className="w-4 h-4" />
+              <span className="hidden sm:inline">Procedures</span>
             </TabsTrigger>
             <TabsTrigger value="zones" className="flex items-center gap-2">
               <Building className="w-4 h-4" />
               <span className="hidden sm:inline">Zones</span>
             </TabsTrigger>
-            <TabsTrigger value="procedures" className="flex items-center gap-2">
-              <Code className="w-4 h-4" />
-              <span className="hidden sm:inline">Procedures</span>
+            <TabsTrigger value="zone-accesses" className="flex items-center gap-2">
+              <Network className="w-4 h-4" />
+              <span className="hidden sm:inline">Zone Accesses</span>
+            </TabsTrigger>
+            <TabsTrigger value="devices" className="flex items-center gap-2">
+              <Server className="w-4 h-4" />
+              <span className="hidden sm:inline">Devices</span>
             </TabsTrigger>
             <TabsTrigger value="sensors" className="flex items-center gap-2">
               <Cpu className="w-4 h-4" />
@@ -153,18 +152,25 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">Properties</span>
             </TabsTrigger>
+            <TabsTrigger value="hidden-properties" className="flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              <span className="hidden sm:inline">Hidden Properties</span>
+            </TabsTrigger>
             <TabsTrigger value="leases" className="flex items-center gap-2">
               <CalendarClock className="w-4 h-4" />
               <span className="hidden sm:inline">Leases</span>
-            </TabsTrigger>
-            <TabsTrigger value="other" className="flex items-center gap-2">
-              <Server className="w-4 h-4" />
-              <span className="hidden sm:inline">Other</span>
             </TabsTrigger>
           </TabsList>
           <ScrollArea className="h-[600px]">
             <TabsContent value="assets" className="p-0 m-0">
               <AssetsTable assets={filteredAssets as Asset[]} statusFilter={statusFilter} />
+            </TabsContent>
+            <TabsContent value="procedures" className="p-0 m-0">
+              <ProceduresTable 
+                procedures={filteredProcedures as Procedure[]} 
+                assets={assets as Asset[]}
+                statusFilter={statusFilter} 
+              />
             </TabsContent>
             <TabsContent value="zones" className="p-0 m-0">
               <ZonesTable 
@@ -174,9 +180,63 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                 onShowZoneDetails={handleShowZoneDetails}
               />
             </TabsContent>
-            <TabsContent value="procedures" className="p-0 m-0">
-              <ProceduresTable 
-                procedures={filteredProcedures as Procedure[]} 
+            <TabsContent value="zone-accesses" className="p-0 m-0">
+              <div className="border rounded-md">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="p-2 text-left font-medium">ZONE NAME</th>
+                        <th className="p-2 text-left font-medium">ADJACENT ZONES</th>
+                        <th className="p-2 text-left font-medium">EDGE SENSORS</th>
+                        <th className="p-2 text-left font-medium">STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredZones.map((zone) => {
+                        const adjacentZones = zones.filter(z => 
+                          zone.parent_zones?.includes(z.id) || 
+                          z.parent_zones?.includes(zone.id)
+                        );
+                        const edgeSensors = getSensorsByZone(zone.id).filter(s => 
+                          s.name?.toLowerCase().includes('edge') || 
+                          s.type?.toLowerCase().includes('edge')
+                        );
+                        
+                        return (
+                          <tr key={zone.id} className="border-t hover:bg-muted/30">
+                            <td className="p-2">{zone.display_name || zone.displayName}</td>
+                            <td className="p-2">
+                              {adjacentZones.length > 0 ? (
+                                <div className="text-sm">
+                                  {adjacentZones.map(az => az.display_name || az.displayName).join(', ')}
+                                </div>
+                              ) : '-'}
+                            </td>
+                            <td className="p-2">
+                              {edgeSensors.length > 0 ? (
+                                <div className="text-sm">
+                                  {edgeSensors.map(es => es.display_name || es.name).join(', ')}
+                                </div>
+                              ) : '-'}
+                            </td>
+                            <td className="p-2">
+                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                Active
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="devices" className="p-0 m-0">
+              <DevicesTable 
+                devices={filteredDevices as Device[]} 
+                zones={zones as Zone[]}
                 assets={assets as Asset[]}
                 statusFilter={statusFilter} 
               />
@@ -198,18 +258,44 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                 statusFilter={statusFilter} 
               />
             </TabsContent>
+            <TabsContent value="hidden-properties" className="p-0 m-0">
+              <div className="border rounded-md">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="p-2 text-left font-medium">PROPERTY INTERNAL NAME</th>
+                        <th className="p-2 text-left font-medium">START DATE</th>
+                        <th className="p-2 text-left font-medium">END DATE</th>
+                        <th className="p-2 text-left font-medium">ENTITY TYPE</th>
+                        <th className="p-2 text-left font-medium">ENTITY ID</th>
+                        <th className="p-2 text-left font-medium">STATUS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProperties.map((property) => (
+                        <tr key={property.id} className="border-t hover:bg-muted/30">
+                          <td className="p-2">{property.internal_name || property.name}</td>
+                          <td className="p-2">{property.start_date || '-'}</td>
+                          <td className="p-2">{property.end_date || '-'}</td>
+                          <td className="p-2">{property.entityType}</td>
+                          <td className="p-2">{property.entityId}</td>
+                          <td className="p-2">
+                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                              Active
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </TabsContent>
             <TabsContent value="leases" className="p-0 m-0">
               <LeasesTable 
                 leases={filteredLeases as Lease[]} 
                 zones={zones as Zone[]}
-                statusFilter={statusFilter} 
-              />
-            </TabsContent>
-            <TabsContent value="other" className="p-0 m-0">
-              <DevicesTable 
-                devices={filteredDevices as Device[]} 
-                zones={zones as Zone[]}
-                assets={assets as Asset[]}
                 statusFilter={statusFilter} 
               />
             </TabsContent>
