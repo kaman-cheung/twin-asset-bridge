@@ -105,7 +105,7 @@ export function ZonesTable({
                       <TableCell>{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</TableCell>
                       <TableCell>{zone.capacity || '-'}</TableCell>
                       <TableCell>{parentAsset ? parentAsset.name : "-"}</TableCell>
-                      <TableCell>{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</TableCell>
+                      <TableCell>{zone.parent_zones ? zone.parent_zones.length : '0'}</TableCell>
                       <TableCell>
                         {zone.devices.length > 0 ? (
                           <div className="text-xs">

@@ -41,6 +41,8 @@ export interface Zone {
   zone_usage?: string; // Added zone_usage property
   level?: number; // Added level property for hierarchy depth
   has_sensors?: boolean; // Added to indicate if zone has sensors directly
+  adjacent_zones?: number[]; // References to adjacent zones
+  edge_sensors?: number[]; // References to edge sensors
 }
 
 export interface Device {

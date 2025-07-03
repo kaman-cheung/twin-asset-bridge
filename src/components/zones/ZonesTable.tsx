@@ -1,3 +1,4 @@
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -200,7 +201,7 @@ export function ZonesTable({
                       <td className="p-2">{zone.lettable_area ? `${zone.lettable_area} sqm` : '-'}</td>
                       <td className="p-2">{zone.capacity || '-'}</td>
                       <td className="p-2">{zone.asset || zone.assetId || '-'}</td>
-                      <td className="p-2">{zone.parent_zones ? zone.parent_zones.length : (zone.parentZoneId ? '1' : '0')}</td>
+                      <td className="p-2">{zone.parent_zones ? zone.parent_zones.length : '0'}</td>
                       <td className="p-2">
                         {zoneDevices > 0 || zoneSensors > 0 ? (
                           <div className="text-xs">
