@@ -45,6 +45,11 @@ export function PropertiesTable({
     }
     return '-';
   };
+
+  const formatDateList = (dates?: string[]): string => {
+    if (!dates || dates.length === 0) return '-';
+    return dates.join(', ');
+  };
   
   return (
     <Table>
@@ -56,12 +61,14 @@ export function PropertiesTable({
           <TableHead>Value</TableHead>
           <TableHead>Unit</TableHead>
           <TableHead>Source</TableHead>
+          <TableHead>Hidden Start Date</TableHead>
+          <TableHead>Hidden End Date</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {filteredProperties.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center py-4">No properties found</TableCell>
+            <TableCell colSpan={8} className="text-center py-4">No properties found</TableCell>
           </TableRow>
         ) : (
           filteredProperties.map((property) => {
@@ -78,6 +85,8 @@ export function PropertiesTable({
                 <TableCell>{property.value || '-'}</TableCell>
                 <TableCell>{property.unit || '-'}</TableCell>
                 <TableCell>{property.source_system || '-'}</TableCell>
+                <TableCell>{formatDateList(property.hidden_start_date)}</TableCell>
+                <TableCell>{formatDateList(property.hidden_end_date)}</TableCell>
               </TableRow>
             );
           })

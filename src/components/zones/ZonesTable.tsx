@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -69,10 +68,9 @@ export function ZonesTable({
   // Get child zones for the selected zone
   const getChildZones = (parentId: number) => {
     return allZones.filter(z => {
-      // Check both parent_zones array and parentZoneId (if they exist)
+      // Check both parent_zones array
       const hasParentZones = z.parent_zones && z.parent_zones.includes(parentId);
-      const hasLegacyParentZone = z.parentZoneId === parentId;
-      return hasParentZones || hasLegacyParentZone;
+      return hasParentZones;
     });
   };
   

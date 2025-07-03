@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -123,7 +122,7 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="assets" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-9 mb-4">
+          <TabsList className="grid w-full grid-cols-8 mb-4">
             <TabsTrigger value="assets" className="flex items-center gap-2">
               <Building className="w-4 h-4" />
               <span className="hidden sm:inline">Assets</span>
@@ -151,10 +150,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
             <TabsTrigger value="properties" className="flex items-center gap-2">
               <List className="w-4 h-4" />
               <span className="hidden sm:inline">Properties</span>
-            </TabsTrigger>
-            <TabsTrigger value="hidden-properties" className="flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">Hidden Properties</span>
             </TabsTrigger>
             <TabsTrigger value="leases" className="flex items-center gap-2">
               <CalendarClock className="w-4 h-4" />
@@ -186,10 +181,8 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                   <table className="w-full">
                     <thead>
                       <tr className="bg-muted/50">
-                        <th className="p-2 text-left font-medium">ZONE NAME</th>
                         <th className="p-2 text-left font-medium">ADJACENT ZONES</th>
                         <th className="p-2 text-left font-medium">EDGE SENSORS</th>
-                        <th className="p-2 text-left font-medium">STATUS</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -205,7 +198,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                         
                         return (
                           <tr key={zone.id} className="border-t hover:bg-muted/30">
-                            <td className="p-2">{zone.display_name || zone.displayName}</td>
                             <td className="p-2">
                               {adjacentZones.length > 0 ? (
                                 <div className="text-sm">
@@ -219,11 +211,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                                   {edgeSensors.map(es => es.display_name || es.name).join(', ')}
                                 </div>
                               ) : '-'}
-                            </td>
-                            <td className="p-2">
-                              <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                                Active
-                              </span>
                             </td>
                           </tr>
                         );
@@ -257,40 +244,6 @@ export function MetadataTable({ selectedAssetId = "all" }: MetadataTableProps) {
                 sensors={sensors as Sensor[]}
                 statusFilter={statusFilter} 
               />
-            </TabsContent>
-            <TabsContent value="hidden-properties" className="p-0 m-0">
-              <div className="border rounded-md">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="p-2 text-left font-medium">PROPERTY INTERNAL NAME</th>
-                        <th className="p-2 text-left font-medium">START DATE</th>
-                        <th className="p-2 text-left font-medium">END DATE</th>
-                        <th className="p-2 text-left font-medium">ENTITY TYPE</th>
-                        <th className="p-2 text-left font-medium">ENTITY ID</th>
-                        <th className="p-2 text-left font-medium">STATUS</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredProperties.map((property) => (
-                        <tr key={property.id} className="border-t hover:bg-muted/30">
-                          <td className="p-2">{property.internal_name || property.name}</td>
-                          <td className="p-2">{property.start_date || '-'}</td>
-                          <td className="p-2">{property.end_date || '-'}</td>
-                          <td className="p-2">{property.entityType}</td>
-                          <td className="p-2">{property.entityId}</td>
-                          <td className="p-2">
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                              Active
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             </TabsContent>
             <TabsContent value="leases" className="p-0 m-0">
               <LeasesTable 
